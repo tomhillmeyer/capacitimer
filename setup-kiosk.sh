@@ -41,7 +41,7 @@ fi
 
 # Clone or update the repository
 echo "Fetching latest version from GitHub..."
-if [ -d "$APP_DIR" ]; then
+if [ -d "$APP_DIR/.git" ]; then
     echo "Updating existing repository..."
     chown -R "$USER:$USER" "$APP_DIR"
     cd "$APP_DIR"
@@ -49,14 +49,12 @@ if [ -d "$APP_DIR" ]; then
     sudo -u "$USER" git reset --hard origin/main || sudo -u "$USER" git reset --hard origin/master
 else
     echo "Cloning repository..."
-    # Create directory as root, set ownership, then clone as kiosk user
-    mkdir -p "$APP_DIR"
-    chown "$USER:$USER" "$APP_DIR"
-    sudo -u "$USER" git clone "$GITHUB_REPO" "$APP_DIR"
+    # Remove directory if it exists without .git
+    rm -rf "$APP_DIR"
+    # Clone as root, then change ownership
+    git clone "$GITHUB_REPO" "$APP_DIR"
+    chown -R "$USER:$USER" "$APP_DIR"
 fi
-
-# Ensure proper permissions
-chown -R "$USER:$USER" "$APP_DIR"
 
 # Install dependencies if package.json exists
 if [ -f "package.json" ]; then
