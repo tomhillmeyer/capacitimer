@@ -49,9 +49,13 @@ if [ -d "$APP_DIR" ]; then
 else
     echo "Cloning repository..."
     mkdir -p "$APP_DIR"
+    chown -R "$USER:$USER" "$APP_DIR"
     cd "$APP_DIR"
     sudo -u "$USER" git clone "$GITHUB_REPO" .
 fi
+
+# Ensure proper permissions
+chown -R "$USER:$USER" "$APP_DIR"
 
 # Install dependencies if package.json exists
 if [ -f "package.json" ]; then
