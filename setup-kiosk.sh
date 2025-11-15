@@ -4,17 +4,18 @@
 # This script sets up a Linux server to boot directly into an Electron app in fullscreen mode
 
 # Configuration
-GITHUB_REPO="https://github.com/tomhillmeyer/capacitimer"
+GITHUB_REPO="https://github.com/tomhillmeyer/capacitimer.git"
+GITHUB_BRANCH="main"
 APP_DIR="/opt/capacitimer"
 USER="kiosk"
 SERVICE_NAME="capacitimer-kiosk"
 
 echo "=== Capacitimer Kiosk Setup ==="
-echo "This script will configure your NUC to boot into the Electron app"
+echo "This script will configure your system to boot into the Capacitimer app"
 echo ""
 
 # Check if running as root
-if [ "$EUID" -ne 0 ]; then 
+if [ "$EUID" -ne 0 ]; then
     echo "Please run as root (use sudo)"
     exit 1
 fi
@@ -68,55 +69,37 @@ if [ -d "$APP_DIR/.git" ]; then
     chown -R "$USER:$USER" "$APP_DIR"
     cd "$APP_DIR"
     sudo -u "$USER" git fetch --all
-    sudo -u "$USER" git reset --hard origin/main || sudo -u "$USER" git reset --hard origin/master
+    sudo -u "$USER" git reset --hard origin/$GITHUB_BRANCH
+    sudo -u "$USER" git clean -fd
 else
     echo "Cloning repository..."
     # Remove directory if it exists without .git
     rm -rf "$APP_DIR"
     # Clone as root, then change ownership
-    git clone "$GITHUB_REPO" "$APP_DIR"
+    git clone -b "$GITHUB_BRANCH" "$GITHUB_REPO" "$APP_DIR"
     chown -R "$USER:$USER" "$APP_DIR"
 fi
 
 # Install dependencies and build the Electron app
 cd "$APP_DIR"
 echo "Installing Node dependencies..."
-sudo -u "$USER" npm install
+sudo -u "$USER" npm ci --omit=dev
 
 echo "Building Electron app for Linux..."
 sudo -u "$USER" npm run dist:linux:intel
 
-# Find the built executable
-EXEC_PATH=$(find "$APP_DIR/out" -name "capacitimer" -o -name "Capacitimer" | head -n 1)
-if [ -z "$EXEC_PATH" ]; then
-    echo "Error: Could not find built executable in out/ directory"
+# Verify the build succeeded
+if [ ! -d "$APP_DIR/out/linux-unpacked" ]; then
+    echo "Error: Build failed - linux-unpacked directory not found"
     exit 1
 fi
 
-echo "Found executable at: $EXEC_PATH"
+echo "Build completed successfully"
 
-# Create xinitrc for the kiosk user
-echo "Configuring X session..."
-cat > /home/$USER/.xinitrc << 'EOF'
-#!/bin/bash
-
-# Disable screen blanking and power management
-xset s off
-xset s noblank
-xset -dpms
-
-# Hide cursor
-unclutter -idle 0.1 &
-
-# Start openbox window manager
-openbox &
-
-# Wait for window manager
-sleep 2
-
-# Configure openbox to make windows fullscreen and borderless
-mkdir -p /home/kiosk/.config/openbox
-cat > /home/kiosk/.config/openbox/rc.xml << 'OPENBOX_EOF'
+# Create openbox config first (before xinitrc)
+echo "Configuring Openbox window manager..."
+mkdir -p /home/$USER/.config/openbox
+cat > /home/$USER/.config/openbox/rc.xml << 'OPENBOX_EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <openbox_config xmlns="http://openbox.org/3.4/rc">
   <applications>
@@ -129,29 +112,35 @@ cat > /home/kiosk/.config/openbox/rc.xml << 'OPENBOX_EOF'
 </openbox_config>
 OPENBOX_EOF
 
-# Restart openbox to apply config
-killall openbox
+chown -R $USER:$USER /home/$USER/.config
+
+# Create xinitrc for the kiosk user
+echo "Configuring X session..."
+cat > /home/$USER/.xinitrc << 'EOF'
+#!/bin/bash
+
+# Disable screen blanking and power management
+xset s off
+xset s noblank
+xset -dpms
+
+# Hide cursor after 0.1 seconds of inactivity
+unclutter -idle 0.1 -root &
+
+# Start openbox window manager in background
 openbox &
-sleep 1
+
+# Wait for window manager to start
+sleep 2
 
 # Launch Electron app in fullscreen
-cd /opt/capacitimer
+cd /opt/capacitimer/out/linux-unpacked || exit 1
 
-# Find the AppImage or unpacked executable
-if [ -f "out/Capacitimer-"*"-linux-x64.AppImage" ]; then
-    EXEC=$(ls out/Capacitimer-*-linux-x64.AppImage | head -n 1)
-    $EXEC --no-sandbox --disable-dev-shm-usage &
-elif [ -d "out/linux-unpacked" ]; then
-    cd out/linux-unpacked
-    # Set library path to include current directory
-    export LD_LIBRARY_PATH="$(pwd):$LD_LIBRARY_PATH"
-    ./capacitimer --no-sandbox --disable-dev-shm-usage &
-else
-    echo "Error: Could not find Electron executable" > /tmp/kiosk-error.log
-fi
+# Set library path to include current directory
+export LD_LIBRARY_PATH="$(pwd):$LD_LIBRARY_PATH"
 
-# Keep X session alive
-wait
+# Launch the app with necessary flags
+exec ./capacitimer --no-sandbox --disable-dev-shm-usage --disable-gpu
 EOF
 
 chown $USER:$USER /home/$USER/.xinitrc
@@ -197,10 +186,13 @@ fi
 
 # Allow the app to bind to port 80 (requires root privileges normally)
 echo "Configuring port 80 permissions..."
-if [ -f "$APP_DIR/out/linux-unpacked/capacitimer" ]; then
-    setcap 'cap_net_bind_service=+ep' "$APP_DIR/out/linux-unpacked/capacitimer"
-elif [ -f "$APP_DIR/out/linux-unpacked/Capacitimer" ]; then
-    setcap 'cap_net_bind_service=+ep' "$APP_DIR/out/linux-unpacked/Capacitimer"
+EXEC_PATH="$APP_DIR/out/linux-unpacked/capacitimer"
+if [ -f "$EXEC_PATH" ]; then
+    setcap 'cap_net_bind_service=+ep' "$EXEC_PATH"
+    echo "Port 80 capability set on $EXEC_PATH"
+else
+    echo "Warning: Executable not found at $EXEC_PATH"
+    echo "The app may not be able to bind to port 80"
 fi
 
 # Reload systemd but DON'T enable yet - let user test first
@@ -220,13 +212,19 @@ echo ""
 echo "To check logs:"
 echo "  sudo journalctl -u ${SERVICE_NAME} -f"
 echo ""
-echo "Once you verify it works correctly, enable auto-start with:"
+echo "Once you verify it works correctly, enable auto-start on boot with:"
 echo "  sudo systemctl enable ${SERVICE_NAME}"
+echo ""
+echo "To update the app to the latest version, run:"
+echo "  sudo $APP_DIR/update-kiosk.sh"
 echo ""
 echo "To disable kiosk mode later:"
 echo "  sudo systemctl disable ${SERVICE_NAME}"
 echo "  sudo systemctl stop ${SERVICE_NAME}"
 echo ""
-echo "SSH will remain accessible on port 22"
-echo "Web interface will be at http://$(hostname -I | awk '{print $1}') after starting"
+echo "Network Information:"
+echo "  SSH: port 22 (remains accessible)"
+echo "  Web Control: http://$(hostname -I | awk '{print $1}')/control.html"
+echo "  Web Display: http://$(hostname -I | awk '{print $1}')/display.html"
+echo "  WebSocket: ws://$(hostname -I | awk '{print $1}'):3001"
 echo ""
