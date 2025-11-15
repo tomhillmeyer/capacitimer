@@ -64,6 +64,19 @@ if [ ! -d "$APP_DIR/out/linux-unpacked" ]; then
     exit 1
 fi
 
+# Fix libffmpeg.so issue - Electron includes it but may not be in the right place
+echo "Checking for libffmpeg.so..."
+cd "$APP_DIR/out/linux-unpacked"
+if [ ! -f "libffmpeg.so" ]; then
+    # Try to find it in the app
+    LIBFFMPEG=$(find . -name "libffmpeg.so" -o -name "libffmpeg.so.*" | head -n 1)
+    if [ -n "$LIBFFMPEG" ]; then
+        echo "Found libffmpeg at $LIBFFMPEG, creating symlink..."
+        ln -sf "$LIBFFMPEG" libffmpeg.so
+    fi
+fi
+cd "$APP_DIR"
+
 # Set port 80 capability
 echo "Configuring port 80 permissions..."
 EXEC_PATH="$APP_DIR/out/linux-unpacked/capacitimer"

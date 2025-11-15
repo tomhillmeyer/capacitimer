@@ -29,8 +29,7 @@ apt-get install -y \
     xorg \
     openbox \
     unclutter \
-    nodejs \
-    npm \
+    curl \
     libcap2-bin \
     libgtk-3-0 \
     libnotify4 \
@@ -43,8 +42,30 @@ apt-get install -y \
     libgbm1 \
     libxcb-dri3-0 \
     libasound2 \
-    ffmpeg \
-    libffmpeg-nvenc-dev
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxtst6 \
+    libxshmfence1 \
+    ca-certificates \
+    fonts-liberation \
+    libappindicator3-1 \
+    libu2f-udev \
+    libvulkan1
+
+# Install Node.js 20.x from NodeSource if not already installed
+if ! command -v node &> /dev/null || [ "$(node -v | cut -d'v' -f2 | cut -d'.' -f1)" -lt 18 ]; then
+    echo "Installing Node.js 20.x..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+else
+    echo "Node.js $(node -v) already installed"
+fi
 
 # Create kiosk user if it doesn't exist
 if ! id "$USER" &>/dev/null; then
@@ -94,6 +115,24 @@ if [ ! -d "$APP_DIR/out/linux-unpacked" ]; then
     exit 1
 fi
 
+# Fix libffmpeg.so issue - Electron includes it but may not be in the right place
+echo "Checking for libffmpeg.so..."
+cd "$APP_DIR/out/linux-unpacked"
+if [ ! -f "libffmpeg.so" ]; then
+    # Try to find it in the app
+    LIBFFMPEG=$(find . -name "libffmpeg.so" -o -name "libffmpeg.so.*" | head -n 1)
+    if [ -n "$LIBFFMPEG" ]; then
+        echo "Found libffmpeg at $LIBFFMPEG, creating symlink..."
+        ln -sf "$LIBFFMPEG" libffmpeg.so
+    else
+        echo "Warning: libffmpeg.so not found in Electron bundle"
+        echo "The app may have issues with video/audio playback"
+    fi
+else
+    echo "libffmpeg.so found"
+fi
+cd "$APP_DIR"
+
 echo "Build completed successfully"
 
 # Create openbox config first (before xinitrc)
@@ -136,11 +175,11 @@ sleep 2
 # Launch Electron app in fullscreen
 cd /opt/capacitimer/out/linux-unpacked || exit 1
 
-# Set library path to include current directory
-export LD_LIBRARY_PATH="$(pwd):$LD_LIBRARY_PATH"
+# Set library path to include current directory and electron resources
+export LD_LIBRARY_PATH="$(pwd):$(pwd)/resources:$LD_LIBRARY_PATH"
 
 # Launch the app with necessary flags
-exec ./capacitimer --no-sandbox --disable-dev-shm-usage --disable-gpu
+exec ./capacitimer --no-sandbox --disable-dev-shm-usage --disable-gpu 2>&1 | tee /tmp/capacitimer-error.log
 EOF
 
 chown $USER:$USER /home/$USER/.xinitrc
