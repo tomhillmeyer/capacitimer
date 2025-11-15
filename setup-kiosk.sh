@@ -99,6 +99,26 @@ openbox &
 # Wait for window manager
 sleep 2
 
+# Configure openbox to make windows fullscreen and borderless
+mkdir -p /home/kiosk/.config/openbox
+cat > /home/kiosk/.config/openbox/rc.xml << 'OPENBOX_EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <applications>
+    <application class="*">
+      <decor>no</decor>
+      <fullscreen>yes</fullscreen>
+      <maximized>yes</maximized>
+    </application>
+  </applications>
+</openbox_config>
+OPENBOX_EOF
+
+# Restart openbox to apply config
+killall openbox
+openbox &
+sleep 1
+
 # Launch Electron app in fullscreen
 cd /opt/capacitimer
 
@@ -152,6 +172,26 @@ EOF
 echo "Enabling kiosk service..."
 systemctl daemon-reload
 systemctl enable ${SERVICE_NAME}.service
+
+# Configure firewall to allow port 80
+echo "Configuring firewall for web server access..."
+if command -v ufw &> /dev/null; then
+    ufw allow 80/tcp
+    ufw --force enable
+elif command -v firewall-cmd &> /dev/null; then
+    firewall-cmd --permanent --add-port=80/tcp
+    firewall-cmd --reload
+else
+    echo "Note: No firewall detected. Port 80 should be accessible."
+fi
+
+# Allow the app to bind to port 80 (requires root privileges normally)
+echo "Configuring port 80 permissions..."
+if [ -f "$APP_DIR/out/linux-unpacked/capacitimer" ]; then
+    setcap 'cap_net_bind_service=+ep' "$APP_DIR/out/linux-unpacked/capacitimer"
+elif [ -f "$APP_DIR/out/linux-unpacked/Capacitimer" ]; then
+    setcap 'cap_net_bind_service=+ep' "$APP_DIR/out/linux-unpacked/Capacitimer"
+fi
 
 # Restart the service to apply changes
 echo "Starting kiosk service..."
