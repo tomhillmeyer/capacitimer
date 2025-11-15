@@ -49,6 +49,9 @@ if [ -d "$APP_DIR" ]; then
     sudo -u "$USER" git reset --hard origin/main || sudo -u "$USER" git reset --hard origin/master
 else
     echo "Cloning repository..."
+    # Create directory as root, set ownership, then clone as kiosk user
+    mkdir -p "$APP_DIR"
+    chown "$USER:$USER" "$APP_DIR"
     sudo -u "$USER" git clone "$GITHUB_REPO" "$APP_DIR"
 fi
 
