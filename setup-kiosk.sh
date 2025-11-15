@@ -3,7 +3,7 @@
 # Capacitimer Kiosk Setup Script
 # This script sets up a Linux server to boot directly into an Electron app in fullscreen mode
 
-set -e  # Exit on error
+# Removed set -e to allow better error handling
 
 # Configuration
 GITHUB_REPO="https://github.com/tomhillmeyer/capacitimer"
@@ -39,6 +39,13 @@ if ! id "$USER" &>/dev/null; then
     useradd -m -s /bin/bash "$USER"
 fi
 
+# Allow kiosk user to run X server
+echo "Configuring X server permissions..."
+cat > /etc/X11/Xwrapper.config << EOF
+allowed_users=anybody
+needs_root_rights=yes
+EOF
+
 # Clone or update the repository
 echo "Fetching latest version from GitHub..."
 if [ -d "$APP_DIR/.git" ]; then
@@ -56,11 +63,22 @@ else
     chown -R "$USER:$USER" "$APP_DIR"
 fi
 
-# Install dependencies if package.json exists
-if [ -f "package.json" ]; then
-    echo "Installing Node dependencies..."
-    sudo -u "$USER" npm install
+# Install dependencies and build the Electron app
+cd "$APP_DIR"
+echo "Installing Node dependencies..."
+sudo -u "$USER" npm install
+
+echo "Building Electron app for Linux..."
+sudo -u "$USER" npm run dist:linux:intel
+
+# Find the built executable
+EXEC_PATH=$(find "$APP_DIR/out" -name "capacitimer" -o -name "Capacitimer" | head -n 1)
+if [ -z "$EXEC_PATH" ]; then
+    echo "Error: Could not find built executable in out/ directory"
+    exit 1
 fi
+
+echo "Found executable at: $EXEC_PATH"
 
 # Create xinitrc for the kiosk user
 echo "Configuring X session..."
@@ -82,19 +100,17 @@ openbox &
 sleep 2
 
 # Launch Electron app in fullscreen
-cd /opt/capacitimer/dist
+cd /opt/capacitimer
 
-# Find the Electron executable (might be named differently)
-if [ -f "capacitimer" ]; then
-    ./capacitimer --no-sandbox --disable-dev-shm-usage --start-fullscreen &
-elif [ -f "Capacitimer" ]; then
-    ./Capacitimer --no-sandbox --disable-dev-shm-usage --start-fullscreen &
+# Find the AppImage or unpacked executable
+if [ -f "out/Capacitimer-"*"-linux-x64.AppImage" ]; then
+    EXEC=$(ls out/Capacitimer-*-linux-x64.AppImage | head -n 1)
+    $EXEC --no-sandbox --disable-dev-shm-usage &
+elif [ -d "out/linux-unpacked" ]; then
+    cd out/linux-unpacked
+    ./capacitimer --no-sandbox --disable-dev-shm-usage &
 else
-    # Look for any executable in the dist folder
-    EXEC=$(find . -maxdepth 1 -type f -executable | head -n 1)
-    if [ -n "$EXEC" ]; then
-        $EXEC --no-sandbox --disable-dev-shm-usage --start-fullscreen &
-    fi
+    echo "Error: Could not find Electron executable" > /tmp/kiosk-error.log
 fi
 
 # Keep X session alive
