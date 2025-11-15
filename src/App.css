@@ -1,0 +1,12 @@
+/* Electron app specific styles */
+/* Shared styles are loaded from public/shared-styles.css via index.html */
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
