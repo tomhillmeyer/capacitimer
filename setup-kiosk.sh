@@ -43,15 +43,13 @@ fi
 echo "Fetching latest version from GitHub..."
 if [ -d "$APP_DIR" ]; then
     echo "Updating existing repository..."
+    chown -R "$USER:$USER" "$APP_DIR"
     cd "$APP_DIR"
     sudo -u "$USER" git fetch --all
     sudo -u "$USER" git reset --hard origin/main || sudo -u "$USER" git reset --hard origin/master
 else
     echo "Cloning repository..."
-    mkdir -p "$APP_DIR"
-    chown -R "$USER:$USER" "$APP_DIR"
-    cd "$APP_DIR"
-    sudo -u "$USER" git clone "$GITHUB_REPO" .
+    sudo -u "$USER" git clone "$GITHUB_REPO" "$APP_DIR"
 fi
 
 # Ensure proper permissions
