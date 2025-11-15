@@ -3,8 +3,6 @@
 # Capacitimer Kiosk Setup Script
 # This script sets up a Linux server to boot directly into an Electron app in fullscreen mode
 
-# Removed set -e to allow better error handling
-
 # Configuration
 GITHUB_REPO="https://github.com/tomhillmeyer/capacitimer"
 APP_DIR="/opt/capacitimer"
@@ -31,12 +29,16 @@ apt-get install -y \
     openbox \
     unclutter \
     nodejs \
-    npm
+    npm \
+    libcap2-bin
 
 # Create kiosk user if it doesn't exist
 if ! id "$USER" &>/dev/null; then
     echo "Creating kiosk user..."
     useradd -m -s /bin/bash "$USER"
+    # Set a default password for safety
+    echo "kiosk:kiosk" | chpasswd
+    echo "Note: Kiosk user created with password 'kiosk'"
 fi
 
 # Allow kiosk user to run X server
@@ -140,46 +142,39 @@ EOF
 chown $USER:$USER /home/$USER/.xinitrc
 chmod +x /home/$USER/.xinitrc
 
-# Create systemd service to auto-start X
+# Create systemd service to auto-start X (but NOT enable it yet)
 echo "Creating systemd service..."
 cat > /etc/systemd/system/${SERVICE_NAME}.service << EOF
 [Unit]
 Description=Capacitimer Kiosk Mode
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=$USER
+TTYPath=/dev/tty7
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
 ExecStart=/usr/bin/startx /home/$USER/.xinitrc -- :0 vt7 -nocursor
 Restart=always
 RestartSec=5
 Environment=DISPLAY=:0
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
 EOF
-
-# Enable auto-login for kiosk user (optional but recommended)
-echo "Configuring auto-login..."
-mkdir -p /etc/systemd/system/getty@tty1.service.d
-cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf << EOF
-[Service]
-ExecStart=
-ExecStart=-/sbin/agetty --autologin $USER --noclear %I \$TERM
-EOF
-
-# Reload systemd and enable service
-echo "Enabling kiosk service..."
-systemctl daemon-reload
-systemctl enable ${SERVICE_NAME}.service
 
 # Configure firewall to allow port 80
 echo "Configuring firewall for web server access..."
 if command -v ufw &> /dev/null; then
     ufw allow 80/tcp
+    ufw allow 22/tcp  # Ensure SSH stays open
     ufw --force enable
 elif command -v firewall-cmd &> /dev/null; then
     firewall-cmd --permanent --add-port=80/tcp
+    firewall-cmd --permanent --add-service=ssh
     firewall-cmd --reload
 else
     echo "Note: No firewall detected. Port 80 should be accessible."
@@ -193,23 +188,30 @@ elif [ -f "$APP_DIR/out/linux-unpacked/Capacitimer" ]; then
     setcap 'cap_net_bind_service=+ep' "$APP_DIR/out/linux-unpacked/Capacitimer"
 fi
 
-# Restart the service to apply changes
-echo "Starting kiosk service..."
-systemctl restart ${SERVICE_NAME}.service
+# Reload systemd but DON'T enable yet - let user test first
+echo "Reloading systemd..."
+systemctl daemon-reload
 
 echo ""
 echo "=== Setup Complete ==="
-echo "Your NUC will now boot directly into the Electron app in fullscreen mode."
+echo "Your app has been built and configured, but NOT auto-started yet."
 echo ""
-echo "Useful commands:"
-echo "  - Check status: sudo systemctl status ${SERVICE_NAME}"
-echo "  - View logs: sudo journalctl -u ${SERVICE_NAME} -f"
-echo "  - Restart app: sudo systemctl restart ${SERVICE_NAME}"
-echo "  - Disable kiosk: sudo systemctl disable ${SERVICE_NAME}"
+echo "IMPORTANT: Test the app first before enabling auto-start!"
 echo ""
-echo "To exit the kiosk mode, press Ctrl+Alt+F2 to switch to another TTY"
-echo "and login as your regular user."
+echo "To test the app manually:"
+echo "  sudo systemctl start ${SERVICE_NAME}"
+echo "  (Press Ctrl+Alt+F2 to switch back to terminal)"
 echo ""
-echo "Rebooting in 10 seconds... (Ctrl+C to cancel)"
-sleep 10
-reboot
+echo "To check logs:"
+echo "  sudo journalctl -u ${SERVICE_NAME} -f"
+echo ""
+echo "Once you verify it works correctly, enable auto-start with:"
+echo "  sudo systemctl enable ${SERVICE_NAME}"
+echo ""
+echo "To disable kiosk mode later:"
+echo "  sudo systemctl disable ${SERVICE_NAME}"
+echo "  sudo systemctl stop ${SERVICE_NAME}"
+echo ""
+echo "SSH will remain accessible on port 22"
+echo "Web interface will be at http://$(hostname -I | awk '{print $1}') after starting"
+echo ""
