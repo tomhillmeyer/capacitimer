@@ -173,13 +173,20 @@ openbox &
 sleep 2
 
 # Launch Electron app in fullscreen
-cd /opt/capacitimer/out/linux-unpacked || exit 1
+APP_DIR="/opt/capacitimer/out/linux-unpacked"
+cd "$APP_DIR" || exit 1
 
-# Set library path to include current directory and electron resources
-export LD_LIBRARY_PATH="$(pwd):$(pwd)/resources:$LD_LIBRARY_PATH"
+# Set library path to include current directory - MUST be set before exec
+export LD_LIBRARY_PATH="$APP_DIR:$APP_DIR/resources:$LD_LIBRARY_PATH"
+
+# Verify libffmpeg.so exists
+if [ ! -f "$APP_DIR/libffmpeg.so" ]; then
+    echo "ERROR: libffmpeg.so not found!" > /tmp/capacitimer-error.log
+    exit 1
+fi
 
 # Launch the app with necessary flags
-exec ./capacitimer --no-sandbox --disable-dev-shm-usage --disable-gpu 2>&1 | tee /tmp/capacitimer-error.log
+exec "$APP_DIR/capacitimer" --no-sandbox --disable-dev-shm-usage --disable-gpu 2>&1 | tee -a /tmp/capacitimer-error.log
 EOF
 
 chown $USER:$USER /home/$USER/.xinitrc
