@@ -10,75 +10,419 @@
     <style>
         /* Control page overrides */
         body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 1rem 2rem;
+            background: #1a1a1a;
+            flex-shrink: 0;
+            border-bottom: 2px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header img {
+            height: 50px;
+        }
+
+        .settings-btn {
+            background: #4488ff;
+            color: #fff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .settings-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            border-radius: 12px;
             padding: 2rem;
-            min-height: 100vh;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #4488ff;
+        }
+
+        .modal-close {
+            background: #ff4444;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Connection Lost Overlay */
+        .connection-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .connection-overlay.active {
+            display: flex;
+        }
+
+        .connection-overlay h2 {
+            color: #ff4444;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .connection-overlay p {
+            color: #aaa;
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #333;
+            border-top: 5px solid #4488ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .main-layout {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Two column layout on wider screens */
+        @media (min-width: 900px) {
+            .main-content {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0;
+                max-width: none;
+                padding: 0;
+            }
+
+            .column {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+                padding: 2rem;
+                overflow-y: auto;
+                overflow-x: hidden;
+                border-right: 2px solid #333;
+                min-height: 0;
+            }
+
+            .column:last-child {
+                border-right: none;
+            }
+        }
+
+        /* Ensure preview doesn't get squished */
+        .output-preview-wrapper {
+            flex-shrink: 0;
+        }
+
+        .output-preview-wrapper {
+            background: #000;
+            border-radius: 8px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Maintain 16:9 aspect ratio */
+        .output-preview-wrapper::before {
+            content: '';
+            display: block;
+            padding-top: 56.25%; /* 9/16 = 0.5625 */
+        }
+
+        .output-preview {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            container-type: inline-size;
+        }
+
+        .output-preview-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .output-preview .timer-value {
+            font-size: 20cqi;
+            font-weight: bold;
+            font-family: monospace;
+            line-height: 1;
+            margin: 0;
+            transition: color 0.3s ease;
+        }
+
+        .output-preview .timer-status {
+            font-size: 4cqi;
+            font-weight: bold;
+            margin-top: 0.1em;
+            color: #ffffff;
+            letter-spacing: 0.2em;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .info-box {
+            background: #2a2a2a;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info-box h3 {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-box .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: monospace;
+            color: #fff;
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .control-buttons button {
+            min-width: 0;
+        }
+
+        .adjustment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .adjustment-grid button {
+            min-width: 0;
+        }
+
+        .quarter-hour-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .quarter-hour-grid button {
+            min-width: 0;
+        }
+
+        .controls-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>Capacitimer</h1>
+    <div class="header">
+        <img src="/capacitimer-wordmark.png" alt="Capacitimer">
+        <button class="settings-btn" onclick="toggleSettings()">Settings</button>
+    </div>
 
-        <div class="timer-display control">
-            <div class="timer-value" id="timerValue">0:00</div>
-            <div class="timer-status" id="timerStatus">READY</div>
-        </div>
+    <div class="main-layout">
+        <div class="main-content">
+            <!-- Column 1: Preview, Info Grid, and Controls -->
+            <div class="column">
+            <!-- Output Preview -->
+            <div class="output-preview-wrapper">
+                <div class="output-preview">
+                    <div class="output-preview-content">
+                        <div class="timer-value" id="previewTimerValue">0:00</div>
+                        <div class="timer-status" id="previewTimerStatus">READY</div>
+                    </div>
+                </div>
+            </div>
 
-        <div class="section">
-            <h2>Playback Controls</h2>
-            <div class="button-group">
-                <button class="btn-start" onclick="startTimer()">Start</button>
-                <button class="btn-pause" onclick="pauseTimer()">Pause</button>
+            <!-- Info Grid -->
+            <div class="info-grid">
+                <div class="info-box">
+                    <h3>Current Time</h3>
+                    <div class="value" id="infoCurrentTime">0:00</div>
+                </div>
+                <div class="info-box">
+                    <h3>Reset Time</h3>
+                    <div class="value" id="infoResetTime">0:00</div>
+                </div>
+                <div class="info-box">
+                    <h3>Start Time</h3>
+                    <div class="value" id="infoStartTime">--:--</div>
+                </div>
+                <div class="info-box">
+                    <h3>End Time</h3>
+                    <div class="value" id="infoEndTime">--:--</div>
+                </div>
+            </div>
+
+            <!-- Start/Reset Buttons -->
+            <div class="control-buttons">
+                <button class="btn-start" id="startPauseBtn" onclick="toggleStartPause()">Start</button>
                 <button class="btn-reset" onclick="resetTimer()">Reset</button>
             </div>
-        </div>
 
-        <div class="section">
-            <h2>Quick Presets</h2>
-            <div class="preset-buttons">
-                <button class="btn-preset" onclick="setTimerPreset('bottomOfHour')">Bottom of Hour</button>
-                <button class="btn-preset" onclick="setTimerPreset('topOfHour')">Top of Hour</button>
-                <button class="btn-preset" onclick="setTimerPreset(60)">1 min</button>
-                <button class="btn-preset" onclick="setTimerPreset(300)">5 min</button>
-                <button class="btn-preset" onclick="setTimerPreset(600)">10 min</button>
-                <button class="btn-preset" onclick="setTimerPreset(1800)">30 min</button>
-                <button class="btn-preset" onclick="setTimerPreset(3600)">60 min</button>
-                <button class="btn-preset" onclick="setTimerPreset(5400)">90 min</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Adjustments</h2>
-            <div class="button-group">
-                <button class="btn-adjust" onclick="adjustTimer(-600)">-10 min</button>
-                <button class="btn-adjust" onclick="adjustTimer(-300)">-5 min</button>
-                <button class="btn-adjust" onclick="adjustTimer(-60)">-1 min</button>
+            <!-- Adjustment Grid (2x2) -->
+            <div class="adjustment-grid">
                 <button class="btn-adjust" onclick="adjustTimer(60)">+1 min</button>
                 <button class="btn-adjust" onclick="adjustTimer(300)">+5 min</button>
-                <button class="btn-adjust" onclick="adjustTimer(600)">+10 min</button>
+                <button class="btn-adjust" onclick="adjustTimer(-60)">-1 min</button>
+                <button class="btn-adjust" onclick="adjustTimer(-300)">-5 min</button>
             </div>
         </div>
 
-        <div class="section">
-            <h2>Custom Time</h2>
-            <div class="custom-time">
-                <input type="text" id="customTime" placeholder="MM:SS or HH:MM:SS" />
-                <button class="btn-preset" onclick="setCustomTime()">Set Time</button>
+        <!-- Column 2: Presets -->
+        <div class="column">
+            <div class="section">
+                <h2>Presets</h2>
+                <div class="preset-buttons">
+                    <button class="btn-preset" onclick="setTimerPreset('quarterHour')">Quarter Hour</button>
+                    <button class="btn-preset" onclick="setTimerPreset('bottomOfHour')">Bottom of Hour</button>
+                    <button class="btn-preset" onclick="setTimerPreset('threeQuarterHour')">3/4 Hour</button>
+                    <button class="btn-preset" onclick="setTimerPreset('topOfHour')">Top of Hour</button>
+                    <button class="btn-preset" onclick="setTimerPreset(60)">1 min</button>
+                    <button class="btn-preset" onclick="setTimerPreset(300)">5 min</button>
+                    <button class="btn-preset" onclick="setTimerPreset(600)">10 min</button>
+                    <button class="btn-preset" onclick="setTimerPreset(1800)">30 min</button>
+                    <button class="btn-preset" onclick="setTimerPreset(3600)">60 min</button>
+                    <button class="btn-preset" onclick="setTimerPreset(5400)">90 min</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Custom Time</h2>
+                <div class="custom-time">
+                    <input type="text" id="customTime" placeholder="MM:SS or HH:MM:SS" />
+                    <button class="btn-preset" onclick="setCustomTime()">Set Time</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Count Down to Time</h2>
+                <div class="custom-time">
+                    <input type="text" id="countDownTime" placeholder="e.g., 2:30 PM or 14:30" />
+                    <button class="btn-preset" onclick="setCountDownToTime()">Count Down</button>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="section">
-            <h2>Count Down to Time</h2>
-            <div class="custom-time">
-                <input type="text" id="countDownTime" placeholder="e.g., 2:30 PM or 14:30" />
-                <button class="btn-preset" onclick="setCountDownToTime()">Count Down</button>
+    <!-- Connection Lost Overlay -->
+    <div class="connection-overlay" id="connectionOverlay">
+        <h2>Connection Lost</h2>
+        <p>Attempting to reconnect to server...</p>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="modal-close" onclick="toggleSettings()">Close</button>
             </div>
-        </div>
-
-        <div class="section">
-            <h2>Settings</h2>
-            <div style="display: grid; gap: 1rem;">
+            <div style="display: grid; gap: 1.5rem;">
                 <div>
                     <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #aaa;">Display Units</h3>
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
@@ -134,8 +478,8 @@
                 </div>
 
                 <div style="margin-top: 0.5rem;">
-                    <p style="font-size: 0.9rem; color: #666;">Note: Settings are stored locally and will apply to all
-                        displays</p>
+                    <p style="font-size: 0.9rem; color: #666;">Note: Settings are stored locally and will apply to
+                        all displays</p>
                 </div>
             </div>
         </div>
@@ -147,12 +491,33 @@
         let cachedState = null;
         let ws = null;
 
+        // Toggle settings modal
+        function toggleSettings() {
+            const modal = document.getElementById('settingsModal');
+            modal.classList.toggle('active');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('settingsModal');
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+
         // WebSocket connection
         function connectWebSocket() {
+            // Show connection overlay
+            document.getElementById('connectionOverlay').classList.add('active');
+
             ws = new WebSocket('ws://localhost:3001');
 
             ws.onopen = () => {
                 console.log('WebSocket connected');
+                // Hide connection overlay
+                document.getElementById('connectionOverlay').classList.remove('active');
+                // Fetch current state to sync
+                fetchTimerState();
             };
 
             ws.onmessage = (event) => {
@@ -177,11 +542,15 @@
 
             ws.onclose = () => {
                 console.log('WebSocket disconnected, reconnecting...');
+                // Show connection overlay
+                document.getElementById('connectionOverlay').classList.add('active');
                 setTimeout(connectWebSocket, 1000);
             };
 
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
+                // Show connection overlay
+                document.getElementById('connectionOverlay').classList.add('active');
             };
         }
 
@@ -233,9 +602,21 @@
             return remainingMs / 1000; // Return fractional seconds for millisecond precision
         }
 
+        function calculatePreciseTimeRemaining(state) {
+            // Always return precise time for calculations (not rounded)
+            if (!state.isRunning || !state.endTime) {
+                return state.pausedTimeRemaining || state.timeRemaining || 0;
+            }
+
+            const now = Date.now();
+            const remainingMs = Math.max(0, state.endTime - now);
+            return remainingMs / 1000;
+        }
+
         function updateDisplay(state) {
-            const timerValue = document.getElementById('timerValue');
-            const timerStatus = document.getElementById('timerStatus');
+            // Update preview display
+            const previewTimerValue = document.getElementById('previewTimerValue');
+            const previewTimerStatus = document.getElementById('previewTimerStatus');
 
             let timeRemaining = calculateTimeRemaining(state);
 
@@ -246,25 +627,76 @@
                 timeRemaining = -elapsed;
             }
 
-            timerValue.textContent = formatTime(timeRemaining);
-            timerValue.style.color = getTimerColor(Math.abs(timeRemaining));
+            previewTimerValue.textContent = formatTime(timeRemaining);
+            previewTimerValue.style.color = getTimerColor(Math.abs(timeRemaining));
 
             // Show time of day
             const timeOfDay = formatTimeOfDay();
             if (timeOfDay) {
-                timerStatus.textContent = timeOfDay;
+                previewTimerStatus.textContent = timeOfDay;
             } else {
                 // Fallback to status if time of day is disabled
                 if (state.isRunning) {
-                    timerStatus.textContent = 'RUNNING';
+                    previewTimerStatus.textContent = 'RUNNING';
                 } else if (state.isPaused) {
-                    timerStatus.textContent = 'PAUSED';
+                    previewTimerStatus.textContent = 'PAUSED';
                 } else if (Math.abs(timeRemaining) > 0) {
-                    timerStatus.textContent = 'READY';
+                    previewTimerStatus.textContent = 'READY';
                 } else {
-                    timerStatus.textContent = "TIME'S UP";
+                    previewTimerStatus.textContent = "TIME'S UP";
                 }
             }
+
+            // Update info boxes
+            document.getElementById('infoCurrentTime').textContent = formatTime(timeRemaining);
+            document.getElementById('infoResetTime').textContent = formatTime(state.initialTimeRemaining || 0);
+
+            // Update start/end times - use same timestamp for all calculations
+            const now = Date.now();
+
+            if (state.startTime && state.isRunning) {
+                // Show actual start time when running
+                const startDate = new Date(state.startTime);
+                document.getElementById('infoStartTime').textContent = formatTimeOfDayFromDate(startDate);
+            } else {
+                // Show current time when not running
+                document.getElementById('infoStartTime').textContent = formatTimeOfDayFromDate(new Date(now));
+            }
+
+            // Always calculate and show projected end time
+            // For running timers, use the endTime directly to avoid rounding issues
+            let projectedEndTime;
+            if (state.isRunning && state.endTime) {
+                projectedEndTime = state.endTime;
+            } else {
+                // For paused/stopped timers, calculate from current time + remaining
+                const preciseRemaining = state.pausedTimeRemaining || state.timeRemaining || 0;
+                projectedEndTime = now + (Math.abs(preciseRemaining) * 1000);
+            }
+
+            const endDate = new Date(projectedEndTime);
+            document.getElementById('infoEndTime').textContent = formatTimeOfDayFromDate(endDate);
+
+            // Update Start/Pause button
+            const startPauseBtn = document.getElementById('startPauseBtn');
+            if (state.isRunning) {
+                startPauseBtn.textContent = 'Pause';
+                startPauseBtn.className = 'btn-pause';
+            } else {
+                startPauseBtn.textContent = 'Start';
+                startPauseBtn.className = 'btn-start';
+            }
+        }
+
+        function formatTimeOfDayFromDate(date) {
+            let hours = date.getHours();
+            const minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+
+            return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
         }
 
         async function fetchTimerState() {
@@ -281,6 +713,14 @@
         function updateLocalDisplay() {
             if (cachedState && cachedState.isRunning) {
                 updateDisplay(cachedState);
+            }
+        }
+
+        async function toggleStartPause() {
+            if (cachedState && cachedState.isRunning) {
+                await pauseTimer();
+            } else {
+                await startTimer();
             }
         }
 
@@ -332,12 +772,16 @@
             }
         }
 
-        async function setTimer(seconds, keepRunning = false) {
+        async function setTimer(seconds, keepRunning = false, targetEndTime = null) {
             try {
+                const body = { seconds, keepRunning };
+                if (targetEndTime) {
+                    body.targetEndTime = targetEndTime;
+                }
                 const response = await fetch('/api/timer/set', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ seconds, keepRunning })
+                    body: JSON.stringify(body)
                 });
                 const data = await response.json();
                 updateDisplay(data.state);
@@ -346,16 +790,26 @@
             }
         }
 
-        // Preset buttons should keep timer running if it's already running
+        // Preset buttons update immediately regardless of running state
         async function setTimerPreset(preset) {
             try {
-                // Get current state to check if running
-                const stateResponse = await fetch('/api/timer');
-                const currentState = await stateResponse.json();
-                const wasRunning = currentState.isRunning;
-
                 let seconds;
-                if (preset === 'bottomOfHour') {
+                let targetEndTime = null;
+
+                if (preset === 'quarterHour') {
+                    // Calculate seconds to quarter of the hour (X:15)
+                    const now = new Date();
+                    const target = new Date(now);
+                    target.setMinutes(15, 0, 0);
+
+                    // If we're past 15 minutes, go to next hour's 15
+                    if (now.getMinutes() >= 15) {
+                        target.setHours(target.getHours() + 1);
+                    }
+
+                    targetEndTime = target.getTime();
+                    seconds = Math.floor((target - now) / 1000);
+                } else if (preset === 'bottomOfHour') {
                     // Calculate seconds to bottom of the hour (X:30)
                     const now = new Date();
                     const target = new Date(now);
@@ -366,6 +820,20 @@
                         target.setHours(target.getHours() + 1);
                     }
 
+                    targetEndTime = target.getTime();
+                    seconds = Math.floor((target - now) / 1000);
+                } else if (preset === 'threeQuarterHour') {
+                    // Calculate seconds to 3/4 of the hour (X:45)
+                    const now = new Date();
+                    const target = new Date(now);
+                    target.setMinutes(45, 0, 0);
+
+                    // If we're past 45 minutes, go to next hour's 45
+                    if (now.getMinutes() >= 45) {
+                        target.setHours(target.getHours() + 1);
+                    }
+
+                    targetEndTime = target.getTime();
                     seconds = Math.floor((target - now) / 1000);
                 } else if (preset === 'topOfHour') {
                     // Calculate seconds to top of the hour (X:00)
@@ -373,12 +841,16 @@
                     const target = new Date(now);
                     target.setHours(target.getHours() + 1, 0, 0, 0);
 
+                    targetEndTime = target.getTime();
                     seconds = Math.floor((target - now) / 1000);
                 } else {
                     seconds = preset;
+                    // For regular presets, no target end time
                 }
 
-                await setTimer(seconds, wasRunning);
+                // Always update immediately, keeping running state
+                // Pass targetEndTime for time-based presets to avoid rounding issues
+                await setTimer(seconds, true, targetEndTime);
             } catch (error) {
                 console.error('Failed to set timer preset:', error);
             }

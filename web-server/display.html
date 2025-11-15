@@ -7,9 +7,63 @@
     <title>Capacitimer</title>
     <link rel="stylesheet" href="/shared-styles.css">
     <script src="/settings.js"></script>
+    <style>
+        /* Connection Lost Overlay */
+        .connection-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .connection-overlay.active {
+            display: flex;
+        }
+
+        .connection-overlay h2 {
+            color: #ff4444;
+            font-size: 4vw;
+            margin: 0;
+        }
+
+        .connection-overlay p {
+            color: #aaa;
+            font-size: 2vw;
+            margin: 0;
+        }
+
+        .spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid #333;
+            border-top: 8px solid #4488ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 
 <body class="fullscreen-display">
+    <!-- Connection Lost Overlay -->
+    <div class="connection-overlay" id="connectionOverlay">
+        <h2>Connection Lost</h2>
+        <p>Attempting to reconnect to server...</p>
+        <div class="spinner"></div>
+    </div>
+
     <div class="timer-display">
         <div class="timer-value" id="timerValue">0:00</div>
         <div class="timer-status" id="timerStatus">READY</div>
@@ -23,10 +77,17 @@
 
         // WebSocket connection
         function connectWebSocket() {
+            // Show connection overlay
+            document.getElementById('connectionOverlay').classList.add('active');
+
             ws = new WebSocket('ws://localhost:3001');
 
             ws.onopen = () => {
                 console.log('WebSocket connected');
+                // Hide connection overlay
+                document.getElementById('connectionOverlay').classList.remove('active');
+                // Fetch current state to sync
+                fetchTimerState();
             };
 
             ws.onmessage = (event) => {
@@ -49,11 +110,15 @@
 
             ws.onclose = () => {
                 console.log('WebSocket disconnected, reconnecting...');
+                // Show connection overlay
+                document.getElementById('connectionOverlay').classList.add('active');
                 setTimeout(connectWebSocket, 1000);
             };
 
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
+                // Show connection overlay
+                document.getElementById('connectionOverlay').classList.add('active');
             };
         }
 

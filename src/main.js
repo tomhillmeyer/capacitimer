@@ -22,6 +22,8 @@ let timerState = {
   lastSetTime: 0, // Track the last set time for reset
   endTime: null, // Absolute timestamp when timer should end
   pausedTimeRemaining: 0, // Time remaining when paused
+  startTime: null, // Timestamp when timer was last started
+  initialTimeRemaining: 0, // Initial time set for the current timer session
 };
 
 // Settings state (stored in memory, synced across all clients)
@@ -122,8 +124,8 @@ function startWebServer() {
   });
 
   expressApp.post('/api/timer/set', (req, res) => {
-    const { seconds, keepRunning } = req.body;
-    setTimer(seconds, keepRunning);
+    const { seconds, keepRunning, targetEndTime } = req.body;
+    setTimer(seconds, keepRunning, targetEndTime);
     res.json({ success: true, state: timerState });
   });
 
@@ -248,6 +250,7 @@ function startTimer() {
 
   timerState.isRunning = true;
   timerState.isPaused = false;
+  timerState.startTime = Date.now(); // Record when the timer started
   timerState.endTime = Date.now() + (currentTimeRemaining * 1000);
 
   if (timerInterval) clearInterval(timerInterval);
@@ -329,29 +332,58 @@ function resetTimer() {
   }
 }
 
-function setTimer(seconds, keepRunning = false) {
+function setTimer(seconds, keepRunning = false, targetEndTime = null) {
   const wasRunning = timerState.isRunning;
 
   timerState.timeRemaining = seconds;
   timerState.pausedTimeRemaining = seconds;
   timerState.lastSetTime = seconds; // Remember this for reset
+  timerState.initialTimeRemaining = seconds; // Track initial time for display
 
   if (!keepRunning) {
     timerState.isRunning = false;
     timerState.isPaused = false;
     timerState.endTime = null;
+    timerState.startTime = null;
 
     if (timerInterval) {
       clearInterval(timerInterval);
       timerInterval = null;
     }
-  }
 
-  broadcastTimerUpdate();
+    broadcastTimerUpdate();
+  } else if (wasRunning && keepRunning) {
+    // If it was running and we want to keep it running, restart the timer
+    // Use the provided targetEndTime if available for precision
+    if (targetEndTime) {
+      timerState.isRunning = true;
+      timerState.isPaused = false;
+      timerState.startTime = Date.now();
+      timerState.endTime = targetEndTime;
 
-  // If it was running and we want to keep it running, restart the timer
-  if (wasRunning && keepRunning) {
-    startTimer();
+      if (timerInterval) clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        if (!timerState.isRunning) return;
+
+        const remaining = calculateTimeRemaining();
+        timerState.timeRemaining = remaining;
+        broadcastTimerUpdate();
+
+        if (remaining === 0) {
+          stopTimer();
+        }
+      }, 100);
+
+      timerState.timeRemaining = calculateTimeRemaining();
+      broadcastTimerUpdate();
+    } else {
+      // No target end time provided, use normal startTimer
+      startTimer();
+    }
+  } else {
+    // Not running, just broadcast
+    broadcastTimerUpdate();
   }
 }
 

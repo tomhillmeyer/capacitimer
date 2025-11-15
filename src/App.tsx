@@ -39,6 +39,7 @@ function App() {
   const [displayTime, setDisplayTime] = useState(0); // Calculated locally for smooth millisecond updates
   const [currentTime, setCurrentTime] = useState(new Date());
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [isConnected, setIsConnected] = useState(true);
 
   useEffect(() => {
     // Load settings from localStorage on startup
@@ -61,26 +62,42 @@ function App() {
     }
 
     // Connect to WebSocket for settings updates
-    const ws = new WebSocket('ws://localhost:3001');
+    let ws: WebSocket;
 
-    ws.onopen = () => {
-      console.log('WebSocket connected');
+    const connectWebSocket = () => {
+      setIsConnected(false);
+
+      ws = new WebSocket('ws://localhost:3001');
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        setIsConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+
+        if (message.type === 'timer-update') {
+          setTimerState(message.data);
+        } else if (message.type === 'settings-update') {
+          // Update settings with new values from broadcast
+          setSettings(prevSettings => ({ ...prevSettings, ...message.data }));
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket disconnected, reconnecting...');
+        setIsConnected(false);
+        setTimeout(connectWebSocket, 1000);
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setIsConnected(false);
+      };
     };
 
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-
-      if (message.type === 'timer-update') {
-        setTimerState(message.data);
-      } else if (message.type === 'settings-update') {
-        // Update settings with new values from broadcast
-        setSettings(prevSettings => ({ ...prevSettings, ...message.data }));
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+    connectWebSocket();
 
     // Update display time at 10fps for smooth millisecond display
     const displayInterval = setInterval(() => {
@@ -106,7 +123,9 @@ function App() {
     return () => {
       clearInterval(displayInterval);
       clearInterval(timeInterval);
-      ws.close();
+      if (ws) {
+        ws.close();
+      }
     };
   }, []);
 
@@ -189,19 +208,48 @@ function App() {
   };
 
   return (
-    <div className="timer-display">
-      <div
-        className="timer-value"
-        style={{ color: getTimerColor(displayTime) }}
-      >
-        {formatTime(displayTime)}
-      </div>
-      {settings.showTimeOfDay && (
-        <div className="timer-status">
-          {formatTimeOfDay(currentTime)}
+    <>
+      {!isConnected && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0, 0, 0, 0.95)',
+          zIndex: 2000,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexDirection: 'column',
+          gap: '2rem',
+        }}>
+          <h2 style={{ color: '#ff4444', fontSize: '4vw', margin: 0 }}>Connection Lost</h2>
+          <p style={{ color: '#aaa', fontSize: '2vw', margin: 0 }}>Attempting to reconnect to server...</p>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            border: '8px solid #333',
+            borderTop: '8px solid #4488ff',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }} />
         </div>
       )}
-    </div>
+      <div className="timer-display">
+        <div
+          className="timer-value"
+          style={{ color: getTimerColor(displayTime) }}
+        >
+          {formatTime(displayTime)}
+        </div>
+        {settings.showTimeOfDay && (
+          <div className="timer-status">
+            {formatTimeOfDay(currentTime)}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
