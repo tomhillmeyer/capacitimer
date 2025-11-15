@@ -30,7 +30,20 @@ apt-get install -y \
     unclutter \
     nodejs \
     npm \
-    libcap2-bin
+    libcap2-bin \
+    libgtk-3-0 \
+    libnotify4 \
+    libnss3 \
+    libxss1 \
+    libxtst6 \
+    xdg-utils \
+    libatspi2.0-0 \
+    libdrm2 \
+    libgbm1 \
+    libxcb-dri3-0 \
+    libasound2 \
+    ffmpeg \
+    libffmpeg-nvenc-dev
 
 # Create kiosk user if it doesn't exist
 if ! id "$USER" &>/dev/null; then
@@ -130,6 +143,8 @@ if [ -f "out/Capacitimer-"*"-linux-x64.AppImage" ]; then
     $EXEC --no-sandbox --disable-dev-shm-usage &
 elif [ -d "out/linux-unpacked" ]; then
     cd out/linux-unpacked
+    # Set library path to include current directory
+    export LD_LIBRARY_PATH="$(pwd):$LD_LIBRARY_PATH"
     ./capacitimer --no-sandbox --disable-dev-shm-usage &
 else
     echo "Error: Could not find Electron executable" > /tmp/kiosk-error.log
