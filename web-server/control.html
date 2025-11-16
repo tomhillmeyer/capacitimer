@@ -33,20 +33,19 @@
         }
 
         .settings-btn {
-            background: #4488ff;
+            background: #262626;
             color: #fff;
             border: none;
             padding: 0.75rem 1.5rem;
             font-size: 1rem;
             font-weight: bold;
-            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
+            max-width: 150px;
         }
 
         .settings-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            opacity: .8;
         }
 
         /* Modal styles */
@@ -87,7 +86,7 @@
 
         .modal-header h2 {
             margin: 0;
-            color: #4488ff;
+            color: #FFFFFF;
         }
 
         .modal-close {
@@ -100,6 +99,7 @@
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
+            max-width: 150px;
         }
 
         .modal-close:hover {
@@ -149,8 +149,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .main-layout {
@@ -211,7 +216,8 @@
         .output-preview-wrapper::before {
             content: '';
             display: block;
-            padding-top: 56.25%; /* 9/16 = 0.5625 */
+            padding-top: 56.25%;
+            /* 9/16 = 0.5625 */
         }
 
         .output-preview {
@@ -327,723 +333,739 @@
         <div class="main-content">
             <!-- Column 1: Preview, Info Grid, and Controls -->
             <div class="column">
-            <!-- Output Preview -->
-            <div class="output-preview-wrapper">
-                <div class="output-preview">
-                    <div class="output-preview-content">
-                        <div class="timer-value" id="previewTimerValue">0:00</div>
-                        <div class="timer-status" id="previewTimerStatus">READY</div>
+                <!-- Output Preview -->
+                <div class="output-preview-wrapper">
+                    <div class="output-preview">
+                        <div class="output-preview-content">
+                            <div class="timer-value" id="previewTimerValue">0:00</div>
+                            <div class="timer-status" id="previewTimerStatus">READY</div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Info Grid -->
+                <div class="info-grid">
+                    <div class="info-box">
+                        <h3>Current Time</h3>
+                        <div class="value" id="infoCurrentTime">0:00</div>
+                    </div>
+                    <div class="info-box">
+                        <h3>Reset Time</h3>
+                        <div class="value" id="infoResetTime">0:00</div>
+                    </div>
+                    <div class="info-box">
+                        <h3>Start Time</h3>
+                        <div class="value" id="infoStartTime">--:--</div>
+                    </div>
+                    <div class="info-box">
+                        <h3>End Time</h3>
+                        <div class="value" id="infoEndTime">--:--</div>
+                    </div>
+                </div>
+
+                <!-- Start/Reset Buttons -->
+                <div class="control-buttons">
+                    <button class="btn-start" id="startPauseBtn" onclick="toggleStartPause()">Start</button>
+                    <button class="btn-reset" onclick="resetTimer()">Reset</button>
+                </div>
+
+                <!-- Adjustment Grid (2x2) -->
+                <div class="adjustment-grid">
+                    <button class="btn-adjust" onclick="adjustTimer(60)">+1 min</button>
+                    <button class="btn-adjust" onclick="adjustTimer(300)">+5 min</button>
+                    <button class="btn-adjust" onclick="adjustTimer(-60)">-1 min</button>
+                    <button class="btn-adjust" onclick="adjustTimer(-300)">-5 min</button>
+                </div>
             </div>
 
-            <!-- Info Grid -->
-            <div class="info-grid">
-                <div class="info-box">
-                    <h3>Current Time</h3>
-                    <div class="value" id="infoCurrentTime">0:00</div>
+            <!-- Column 2: Presets -->
+            <div class="column">
+                <div class="section">
+                    <h2>Presets</h2>
+                    <div class="preset-buttons">
+                        <button class="btn-preset" onclick="setTimerPreset('quarterHour')">Quarter Hour</button>
+                        <button class="btn-preset" onclick="setTimerPreset('bottomOfHour')">Bottom of Hour</button>
+                        <button class="btn-preset" onclick="setTimerPreset('threeQuarterHour')">3/4 Hour</button>
+                        <button class="btn-preset" onclick="setTimerPreset('topOfHour')">Top of Hour</button>
+                        <button class="btn-preset" onclick="setTimerPreset(60)">1 min</button>
+                        <button class="btn-preset" onclick="setTimerPreset(300)">5 min</button>
+                        <button class="btn-preset" onclick="setTimerPreset(600)">10 min</button>
+                        <button class="btn-preset" onclick="setTimerPreset(1800)">30 min</button>
+                        <button class="btn-preset" onclick="setTimerPreset(3600)">60 min</button>
+                        <button class="btn-preset" onclick="setTimerPreset(5400)">90 min</button>
+                    </div>
                 </div>
-                <div class="info-box">
-                    <h3>Reset Time</h3>
-                    <div class="value" id="infoResetTime">0:00</div>
-                </div>
-                <div class="info-box">
-                    <h3>Start Time</h3>
-                    <div class="value" id="infoStartTime">--:--</div>
-                </div>
-                <div class="info-box">
-                    <h3>End Time</h3>
-                    <div class="value" id="infoEndTime">--:--</div>
-                </div>
-            </div>
 
-            <!-- Start/Reset Buttons -->
-            <div class="control-buttons">
-                <button class="btn-start" id="startPauseBtn" onclick="toggleStartPause()">Start</button>
-                <button class="btn-reset" onclick="resetTimer()">Reset</button>
-            </div>
+                <div class="section">
+                    <h2>Custom Time</h2>
+                    <div class="custom-time">
+                        <input type="text" id="customTime" placeholder="MM:SS or HH:MM:SS" />
+                        <button class="btn-preset" onclick="setCustomTime()">Set Time</button>
+                    </div>
+                </div>
 
-            <!-- Adjustment Grid (2x2) -->
-            <div class="adjustment-grid">
-                <button class="btn-adjust" onclick="adjustTimer(60)">+1 min</button>
-                <button class="btn-adjust" onclick="adjustTimer(300)">+5 min</button>
-                <button class="btn-adjust" onclick="adjustTimer(-60)">-1 min</button>
-                <button class="btn-adjust" onclick="adjustTimer(-300)">-5 min</button>
+                <div class="section">
+                    <h2>Count Down to Time</h2>
+                    <div class="custom-time">
+                        <input type="text" id="countDownTime" placeholder="e.g., 2:30 PM or 14:30" />
+                        <button class="btn-preset" onclick="setCountDownToTime()">Count Down</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Column 2: Presets -->
-        <div class="column">
-            <div class="section">
-                <h2>Presets</h2>
-                <div class="preset-buttons">
-                    <button class="btn-preset" onclick="setTimerPreset('quarterHour')">Quarter Hour</button>
-                    <button class="btn-preset" onclick="setTimerPreset('bottomOfHour')">Bottom of Hour</button>
-                    <button class="btn-preset" onclick="setTimerPreset('threeQuarterHour')">3/4 Hour</button>
-                    <button class="btn-preset" onclick="setTimerPreset('topOfHour')">Top of Hour</button>
-                    <button class="btn-preset" onclick="setTimerPreset(60)">1 min</button>
-                    <button class="btn-preset" onclick="setTimerPreset(300)">5 min</button>
-                    <button class="btn-preset" onclick="setTimerPreset(600)">10 min</button>
-                    <button class="btn-preset" onclick="setTimerPreset(1800)">30 min</button>
-                    <button class="btn-preset" onclick="setTimerPreset(3600)">60 min</button>
-                    <button class="btn-preset" onclick="setTimerPreset(5400)">90 min</button>
-                </div>
-            </div>
+        <!-- Connection Lost Overlay -->
+        <div class="connection-overlay" id="connectionOverlay">
+            <h2>Connection Lost</h2>
+            <p>Attempting to reconnect to server...</p>
+            <div class="spinner"></div>
+        </div>
 
-            <div class="section">
-                <h2>Custom Time</h2>
-                <div class="custom-time">
-                    <input type="text" id="customTime" placeholder="MM:SS or HH:MM:SS" />
-                    <button class="btn-preset" onclick="setCustomTime()">Set Time</button>
+        <!-- Settings Modal -->
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <button class="modal-close" onclick="toggleSettings()">Close</button>
                 </div>
-            </div>
+                <div style="display: grid; gap: 1.5rem;">
+                    <div>
+                        <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #aaa;">Display Units</h3>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <div>
+                                <span>Hours</span>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"
+                                    class="switch">
+                                    <input type="checkbox" id="showHours" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div>
+                                <span>Minutes</span>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"
+                                    class="switch">
+                                    <input type="checkbox" id="showMinutes" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div>
+                                <span>Seconds</span>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"
+                                    class="switch">
+                                    <input type="checkbox" id="showSeconds" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div>
+                                <span>Milliseconds</span>
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"
+                                    class="switch">
+                                    <input type="checkbox" id="showMilliseconds">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
 
-            <div class="section">
-                <h2>Count Down to Time</h2>
-                <div class="custom-time">
-                    <input type="text" id="countDownTime" placeholder="e.g., 2:30 PM or 14:30" />
-                    <button class="btn-preset" onclick="setCountDownToTime()">Count Down</button>
+                    <div>
+                        <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #aaa;">Timer Colors</h3>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>Normal:</span>
+                                <input type="color" id="colorNormal" value="#44ff44">
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>Warning:</span>
+                                <input type="color" id="colorWarning" value="#ffaa00">
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>Critical:</span>
+                                <input type="color" id="colorCritical" value="#ff4444">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #aaa;">Display Options</h3>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="countUpAfterZero">
+                                <span>Count up after 0</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="showTimeOfDay" checked>
+                                <span>Show time of day</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 0.5rem;">
+                        <p style="font-size: 0.9rem; color: #666;">Note: Settings are stored locally and will apply to
+                            all displays</p>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Connection Lost Overlay -->
-    <div class="connection-overlay" id="connectionOverlay">
-        <h2>Connection Lost</h2>
-        <p>Attempting to reconnect to server...</p>
-        <div class="spinner"></div>
-    </div>
+        <script>
+            let updateInterval;
+            let localUpdateInterval;
+            let cachedState = null;
+            let ws = null;
 
-    <!-- Settings Modal -->
-    <div class="modal" id="settingsModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Settings</h2>
-                <button class="modal-close" onclick="toggleSettings()">Close</button>
-            </div>
-            <div style="display: grid; gap: 1.5rem;">
-                <div>
-                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #aaa;">Display Units</h3>
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" id="showHours" checked>
-                            <span>Hours</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" id="showMinutes" checked>
-                            <span>Minutes</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" id="showSeconds" checked>
-                            <span>Seconds</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" id="showMilliseconds">
-                            <span>Milliseconds</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #aaa;">Timer Colors</h3>
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span>Normal:</span>
-                            <input type="color" id="colorNormal" value="#44ff44">
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span>Warning:</span>
-                            <input type="color" id="colorWarning" value="#ffaa00">
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span>Critical:</span>
-                            <input type="color" id="colorCritical" value="#ff4444">
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #aaa;">Display Options</h3>
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" id="countUpAfterZero">
-                            <span>Count up after 0</span>
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                            <input type="checkbox" id="showTimeOfDay" checked>
-                            <span>Show time of day</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div style="margin-top: 0.5rem;">
-                    <p style="font-size: 0.9rem; color: #666;">Note: Settings are stored locally and will apply to
-                        all displays</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let updateInterval;
-        let localUpdateInterval;
-        let cachedState = null;
-        let ws = null;
-
-        // Toggle settings modal
-        function toggleSettings() {
-            const modal = document.getElementById('settingsModal');
-            modal.classList.toggle('active');
-        }
-
-        // Close modal when clicking outside
-        document.addEventListener('click', (e) => {
-            const modal = document.getElementById('settingsModal');
-            if (e.target === modal) {
-                modal.classList.remove('active');
+            // Toggle settings modal
+            function toggleSettings() {
+                const modal = document.getElementById('settingsModal');
+                modal.classList.toggle('active');
             }
-        });
 
-        // WebSocket connection
-        function connectWebSocket() {
-            // Show connection overlay
-            document.getElementById('connectionOverlay').classList.add('active');
+            // Close modal when clicking outside
+            document.addEventListener('click', (e) => {
+                const modal = document.getElementById('settingsModal');
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
 
-            // Use the current hostname to connect to WebSocket server
-            const wsHost = window.location.hostname;
-            ws = new WebSocket(`ws://${wsHost}:3001`);
+            // WebSocket connection
+            function connectWebSocket() {
+                // Show connection overlay
+                document.getElementById('connectionOverlay').classList.add('active');
 
-            ws.onopen = () => {
-                console.log('WebSocket connected');
-                // Hide connection overlay
-                document.getElementById('connectionOverlay').classList.remove('active');
-                // Fetch current state to sync
-                fetchTimerState();
-            };
+                // Use the current hostname to connect to WebSocket server
+                const wsHost = window.location.hostname;
+                ws = new WebSocket(`ws://${wsHost}:3001`);
 
-            ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
+                ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    // Hide connection overlay
+                    document.getElementById('connectionOverlay').classList.remove('active');
+                    // Fetch current state to sync
+                    fetchTimerState();
+                };
 
-                if (message.type === 'timer-update') {
-                    cachedState = message.data;
-                    updateDisplay(message.data);
-                } else if (message.type === 'settings-update') {
-                    // Update settings from broadcast
-                    Object.keys(message.data).forEach(key => {
-                        settingsManager.set(key, message.data[key]);
+                ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+
+                    if (message.type === 'timer-update') {
+                        cachedState = message.data;
+                        updateDisplay(message.data);
+                    } else if (message.type === 'settings-update') {
+                        // Update settings from broadcast
+                        Object.keys(message.data).forEach(key => {
+                            settingsManager.set(key, message.data[key]);
+                        });
+                        // Update UI elements (without re-adding listeners)
+                        updateSettingsUI();
+                        // Update display with new settings
+                        if (cachedState) {
+                            updateDisplay(cachedState);
+                        }
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log('WebSocket disconnected, reconnecting...');
+                    // Show connection overlay
+                    document.getElementById('connectionOverlay').classList.add('active');
+                    setTimeout(connectWebSocket, 1000);
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    // Show connection overlay
+                    document.getElementById('connectionOverlay').classList.add('active');
+                };
+            }
+
+            // Broadcast settings changes to other clients
+            async function broadcastSettings() {
+                const settings = settingsManager.getAll();
+                try {
+                    await fetch('/api/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(settings)
                     });
-                    // Update UI elements (without re-adding listeners)
-                    updateSettingsUI();
-                    // Update display with new settings
-                    if (cachedState) {
-                        updateDisplay(cachedState);
+                } catch (error) {
+                    console.error('Failed to broadcast settings:', error);
+                }
+            }
+
+            function formatTime(seconds) {
+                return settingsManager.formatTime(seconds);
+            }
+
+            function getTimerColor(seconds) {
+                return settingsManager.getTimerColor(seconds);
+            }
+
+            function formatTimeOfDay() {
+                if (!settingsManager.get('showTimeOfDay')) {
+                    return '';
+                }
+                const now = new Date();
+                let hours = now.getHours();
+                const minutes = now.getMinutes();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+
+                return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+            }
+
+            function calculateTimeRemaining(state) {
+                if (!state.isRunning || !state.endTime) {
+                    // Use pausedTimeRemaining to preserve milliseconds when paused
+                    return state.pausedTimeRemaining || state.timeRemaining;
+                }
+
+                const now = Date.now();
+                const remainingMs = Math.max(0, state.endTime - now);
+                return remainingMs / 1000; // Return fractional seconds for millisecond precision
+            }
+
+            function calculatePreciseTimeRemaining(state) {
+                // Always return precise time for calculations (not rounded)
+                if (!state.isRunning || !state.endTime) {
+                    return state.pausedTimeRemaining || state.timeRemaining || 0;
+                }
+
+                const now = Date.now();
+                const remainingMs = Math.max(0, state.endTime - now);
+                return remainingMs / 1000;
+            }
+
+            function updateDisplay(state) {
+                // Update preview display
+                const previewTimerValue = document.getElementById('previewTimerValue');
+                const previewTimerStatus = document.getElementById('previewTimerStatus');
+
+                let timeRemaining = calculateTimeRemaining(state);
+
+                // Handle count up after zero
+                if (settingsManager.get('countUpAfterZero') && timeRemaining === 0 && state.isRunning) {
+                    // Calculate elapsed time since endTime
+                    const elapsed = Math.floor((Date.now() - state.endTime) / 1000);
+                    timeRemaining = -elapsed;
+                }
+
+                previewTimerValue.textContent = formatTime(timeRemaining);
+                previewTimerValue.style.color = getTimerColor(Math.abs(timeRemaining));
+
+                // Show time of day
+                const timeOfDay = formatTimeOfDay();
+                if (timeOfDay) {
+                    previewTimerStatus.textContent = timeOfDay;
+                } else {
+                    // Fallback to status if time of day is disabled
+                    if (state.isRunning) {
+                        previewTimerStatus.textContent = 'RUNNING';
+                    } else if (state.isPaused) {
+                        previewTimerStatus.textContent = 'PAUSED';
+                    } else if (Math.abs(timeRemaining) > 0) {
+                        previewTimerStatus.textContent = 'READY';
+                    } else {
+                        previewTimerStatus.textContent = "TIME'S UP";
                     }
                 }
-            };
 
-            ws.onclose = () => {
-                console.log('WebSocket disconnected, reconnecting...');
-                // Show connection overlay
-                document.getElementById('connectionOverlay').classList.add('active');
-                setTimeout(connectWebSocket, 1000);
-            };
+                // Update info boxes
+                document.getElementById('infoCurrentTime').textContent = formatTime(timeRemaining);
+                document.getElementById('infoResetTime').textContent = formatTime(state.initialTimeRemaining || 0);
 
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                // Show connection overlay
-                document.getElementById('connectionOverlay').classList.add('active');
-            };
-        }
+                // Update start/end times - use same timestamp for all calculations
+                const now = Date.now();
 
-        // Broadcast settings changes to other clients
-        async function broadcastSettings() {
-            const settings = settingsManager.getAll();
-            try {
-                await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(settings)
-                });
-            } catch (error) {
-                console.error('Failed to broadcast settings:', error);
-            }
-        }
-
-        function formatTime(seconds) {
-            return settingsManager.formatTime(seconds);
-        }
-
-        function getTimerColor(seconds) {
-            return settingsManager.getTimerColor(seconds);
-        }
-
-        function formatTimeOfDay() {
-            if (!settingsManager.get('showTimeOfDay')) {
-                return '';
-            }
-            const now = new Date();
-            let hours = now.getHours();
-            const minutes = now.getMinutes();
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-
-            hours = hours % 12;
-            hours = hours ? hours : 12;
-
-            return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-        }
-
-        function calculateTimeRemaining(state) {
-            if (!state.isRunning || !state.endTime) {
-                // Use pausedTimeRemaining to preserve milliseconds when paused
-                return state.pausedTimeRemaining || state.timeRemaining;
-            }
-
-            const now = Date.now();
-            const remainingMs = Math.max(0, state.endTime - now);
-            return remainingMs / 1000; // Return fractional seconds for millisecond precision
-        }
-
-        function calculatePreciseTimeRemaining(state) {
-            // Always return precise time for calculations (not rounded)
-            if (!state.isRunning || !state.endTime) {
-                return state.pausedTimeRemaining || state.timeRemaining || 0;
-            }
-
-            const now = Date.now();
-            const remainingMs = Math.max(0, state.endTime - now);
-            return remainingMs / 1000;
-        }
-
-        function updateDisplay(state) {
-            // Update preview display
-            const previewTimerValue = document.getElementById('previewTimerValue');
-            const previewTimerStatus = document.getElementById('previewTimerStatus');
-
-            let timeRemaining = calculateTimeRemaining(state);
-
-            // Handle count up after zero
-            if (settingsManager.get('countUpAfterZero') && timeRemaining === 0 && state.isRunning) {
-                // Calculate elapsed time since endTime
-                const elapsed = Math.floor((Date.now() - state.endTime) / 1000);
-                timeRemaining = -elapsed;
-            }
-
-            previewTimerValue.textContent = formatTime(timeRemaining);
-            previewTimerValue.style.color = getTimerColor(Math.abs(timeRemaining));
-
-            // Show time of day
-            const timeOfDay = formatTimeOfDay();
-            if (timeOfDay) {
-                previewTimerStatus.textContent = timeOfDay;
-            } else {
-                // Fallback to status if time of day is disabled
-                if (state.isRunning) {
-                    previewTimerStatus.textContent = 'RUNNING';
-                } else if (state.isPaused) {
-                    previewTimerStatus.textContent = 'PAUSED';
-                } else if (Math.abs(timeRemaining) > 0) {
-                    previewTimerStatus.textContent = 'READY';
+                if (state.startTime && state.isRunning) {
+                    // Show actual start time when running
+                    const startDate = new Date(state.startTime);
+                    document.getElementById('infoStartTime').textContent = formatTimeOfDayFromDate(startDate);
                 } else {
-                    previewTimerStatus.textContent = "TIME'S UP";
+                    // Show current time when not running
+                    document.getElementById('infoStartTime').textContent = formatTimeOfDayFromDate(new Date(now));
+                }
+
+                // Always calculate and show projected end time
+                // For running timers, use the endTime directly to avoid rounding issues
+                let projectedEndTime;
+                if (state.isRunning && state.endTime) {
+                    projectedEndTime = state.endTime;
+                } else {
+                    // For paused/stopped timers, calculate from current time + remaining
+                    const preciseRemaining = state.pausedTimeRemaining || state.timeRemaining || 0;
+                    projectedEndTime = now + (Math.abs(preciseRemaining) * 1000);
+                }
+
+                const endDate = new Date(projectedEndTime);
+                document.getElementById('infoEndTime').textContent = formatTimeOfDayFromDate(endDate);
+
+                // Update Start/Pause button
+                const startPauseBtn = document.getElementById('startPauseBtn');
+                if (state.isRunning) {
+                    startPauseBtn.textContent = 'Pause';
+                    startPauseBtn.className = 'btn-pause';
+                } else {
+                    startPauseBtn.textContent = 'Start';
+                    startPauseBtn.className = 'btn-start';
                 }
             }
 
-            // Update info boxes
-            document.getElementById('infoCurrentTime').textContent = formatTime(timeRemaining);
-            document.getElementById('infoResetTime').textContent = formatTime(state.initialTimeRemaining || 0);
+            function formatTimeOfDayFromDate(date) {
+                let hours = date.getHours();
+                const minutes = date.getMinutes();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
 
-            // Update start/end times - use same timestamp for all calculations
-            const now = Date.now();
+                hours = hours % 12;
+                hours = hours ? hours : 12;
 
-            if (state.startTime && state.isRunning) {
-                // Show actual start time when running
-                const startDate = new Date(state.startTime);
-                document.getElementById('infoStartTime').textContent = formatTimeOfDayFromDate(startDate);
-            } else {
-                // Show current time when not running
-                document.getElementById('infoStartTime').textContent = formatTimeOfDayFromDate(new Date(now));
+                return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
             }
 
-            // Always calculate and show projected end time
-            // For running timers, use the endTime directly to avoid rounding issues
-            let projectedEndTime;
-            if (state.isRunning && state.endTime) {
-                projectedEndTime = state.endTime;
-            } else {
-                // For paused/stopped timers, calculate from current time + remaining
-                const preciseRemaining = state.pausedTimeRemaining || state.timeRemaining || 0;
-                projectedEndTime = now + (Math.abs(preciseRemaining) * 1000);
+            async function fetchTimerState() {
+                try {
+                    const response = await fetch('/api/timer');
+                    const state = await response.json();
+                    cachedState = state;
+                    updateDisplay(state);
+                } catch (error) {
+                    console.error('Failed to fetch timer state:', error);
+                }
             }
 
-            const endDate = new Date(projectedEndTime);
-            document.getElementById('infoEndTime').textContent = formatTimeOfDayFromDate(endDate);
-
-            // Update Start/Pause button
-            const startPauseBtn = document.getElementById('startPauseBtn');
-            if (state.isRunning) {
-                startPauseBtn.textContent = 'Pause';
-                startPauseBtn.className = 'btn-pause';
-            } else {
-                startPauseBtn.textContent = 'Start';
-                startPauseBtn.className = 'btn-start';
-            }
-        }
-
-        function formatTimeOfDayFromDate(date) {
-            let hours = date.getHours();
-            const minutes = date.getMinutes();
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-
-            hours = hours % 12;
-            hours = hours ? hours : 12;
-
-            return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-        }
-
-        async function fetchTimerState() {
-            try {
-                const response = await fetch('/api/timer');
-                const state = await response.json();
-                cachedState = state;
-                updateDisplay(state);
-            } catch (error) {
-                console.error('Failed to fetch timer state:', error);
-            }
-        }
-
-        function updateLocalDisplay() {
-            if (cachedState && cachedState.isRunning) {
-                updateDisplay(cachedState);
-            }
-        }
-
-        async function toggleStartPause() {
-            if (cachedState && cachedState.isRunning) {
-                await pauseTimer();
-            } else {
-                await startTimer();
-            }
-        }
-
-        async function startTimer() {
-            try {
-                const response = await fetch('/api/timer/start', { method: 'POST' });
-                const data = await response.json();
-                updateDisplay(data.state);
-            } catch (error) {
-                console.error('Failed to start timer:', error);
-            }
-        }
-
-        async function pauseTimer() {
-            try {
-                // Optimistically update the cached state immediately to prevent flicker
-                if (cachedState && cachedState.isRunning && cachedState.endTime) {
-                    const now = Date.now();
-                    const remainingMs = Math.max(0, cachedState.endTime - now);
-                    const preciseRemaining = remainingMs / 1000;
-
-                    cachedState = {
-                        ...cachedState,
-                        isRunning: false,
-                        isPaused: true,
-                        pausedTimeRemaining: preciseRemaining,
-                        timeRemaining: Math.ceil(preciseRemaining),
-                        endTime: null
-                    };
+            function updateLocalDisplay() {
+                if (cachedState && cachedState.isRunning) {
                     updateDisplay(cachedState);
                 }
-
-                const response = await fetch('/api/timer/pause', { method: 'POST' });
-                const data = await response.json();
-                cachedState = data.state;
-                updateDisplay(data.state);
-            } catch (error) {
-                console.error('Failed to pause timer:', error);
             }
-        }
 
-        async function resetTimer() {
-            try {
-                const response = await fetch('/api/timer/reset', { method: 'POST' });
-                const data = await response.json();
-                updateDisplay(data.state);
-            } catch (error) {
-                console.error('Failed to reset timer:', error);
-            }
-        }
-
-        async function setTimer(seconds, keepRunning = false, targetEndTime = null) {
-            try {
-                const body = { seconds, keepRunning };
-                if (targetEndTime) {
-                    body.targetEndTime = targetEndTime;
-                }
-                const response = await fetch('/api/timer/set', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                const data = await response.json();
-                updateDisplay(data.state);
-            } catch (error) {
-                console.error('Failed to set timer:', error);
-            }
-        }
-
-        // Preset buttons update immediately regardless of running state
-        async function setTimerPreset(preset) {
-            try {
-                let seconds;
-                let targetEndTime = null;
-
-                if (preset === 'quarterHour') {
-                    // Calculate seconds to quarter of the hour (X:15)
-                    const now = new Date();
-                    const target = new Date(now);
-                    target.setMinutes(15, 0, 0);
-
-                    // If we're past 15 minutes, go to next hour's 15
-                    if (now.getMinutes() >= 15) {
-                        target.setHours(target.getHours() + 1);
-                    }
-
-                    targetEndTime = target.getTime();
-                    seconds = Math.floor((target - now) / 1000);
-                } else if (preset === 'bottomOfHour') {
-                    // Calculate seconds to bottom of the hour (X:30)
-                    const now = new Date();
-                    const target = new Date(now);
-                    target.setMinutes(30, 0, 0);
-
-                    // If we're past 30 minutes, go to next hour's 30
-                    if (now.getMinutes() >= 30) {
-                        target.setHours(target.getHours() + 1);
-                    }
-
-                    targetEndTime = target.getTime();
-                    seconds = Math.floor((target - now) / 1000);
-                } else if (preset === 'threeQuarterHour') {
-                    // Calculate seconds to 3/4 of the hour (X:45)
-                    const now = new Date();
-                    const target = new Date(now);
-                    target.setMinutes(45, 0, 0);
-
-                    // If we're past 45 minutes, go to next hour's 45
-                    if (now.getMinutes() >= 45) {
-                        target.setHours(target.getHours() + 1);
-                    }
-
-                    targetEndTime = target.getTime();
-                    seconds = Math.floor((target - now) / 1000);
-                } else if (preset === 'topOfHour') {
-                    // Calculate seconds to top of the hour (X:00)
-                    const now = new Date();
-                    const target = new Date(now);
-                    target.setHours(target.getHours() + 1, 0, 0, 0);
-
-                    targetEndTime = target.getTime();
-                    seconds = Math.floor((target - now) / 1000);
+            async function toggleStartPause() {
+                if (cachedState && cachedState.isRunning) {
+                    await pauseTimer();
                 } else {
-                    seconds = preset;
-                    // For regular presets, no target end time
+                    await startTimer();
+                }
+            }
+
+            async function startTimer() {
+                try {
+                    const response = await fetch('/api/timer/start', { method: 'POST' });
+                    const data = await response.json();
+                    updateDisplay(data.state);
+                } catch (error) {
+                    console.error('Failed to start timer:', error);
+                }
+            }
+
+            async function pauseTimer() {
+                try {
+                    // Optimistically update the cached state immediately to prevent flicker
+                    if (cachedState && cachedState.isRunning && cachedState.endTime) {
+                        const now = Date.now();
+                        const remainingMs = Math.max(0, cachedState.endTime - now);
+                        const preciseRemaining = remainingMs / 1000;
+
+                        cachedState = {
+                            ...cachedState,
+                            isRunning: false,
+                            isPaused: true,
+                            pausedTimeRemaining: preciseRemaining,
+                            timeRemaining: Math.ceil(preciseRemaining),
+                            endTime: null
+                        };
+                        updateDisplay(cachedState);
+                    }
+
+                    const response = await fetch('/api/timer/pause', { method: 'POST' });
+                    const data = await response.json();
+                    cachedState = data.state;
+                    updateDisplay(data.state);
+                } catch (error) {
+                    console.error('Failed to pause timer:', error);
+                }
+            }
+
+            async function resetTimer() {
+                try {
+                    const response = await fetch('/api/timer/reset', { method: 'POST' });
+                    const data = await response.json();
+                    updateDisplay(data.state);
+                } catch (error) {
+                    console.error('Failed to reset timer:', error);
+                }
+            }
+
+            async function setTimer(seconds, keepRunning = false, targetEndTime = null) {
+                try {
+                    const body = { seconds, keepRunning };
+                    if (targetEndTime) {
+                        body.targetEndTime = targetEndTime;
+                    }
+                    const response = await fetch('/api/timer/set', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await response.json();
+                    updateDisplay(data.state);
+                } catch (error) {
+                    console.error('Failed to set timer:', error);
+                }
+            }
+
+            // Preset buttons update immediately regardless of running state
+            async function setTimerPreset(preset) {
+                try {
+                    let seconds;
+                    let targetEndTime = null;
+
+                    if (preset === 'quarterHour') {
+                        // Calculate seconds to quarter of the hour (X:15)
+                        const now = new Date();
+                        const target = new Date(now);
+                        target.setMinutes(15, 0, 0);
+
+                        // If we're past 15 minutes, go to next hour's 15
+                        if (now.getMinutes() >= 15) {
+                            target.setHours(target.getHours() + 1);
+                        }
+
+                        targetEndTime = target.getTime();
+                        seconds = Math.floor((target - now) / 1000);
+                    } else if (preset === 'bottomOfHour') {
+                        // Calculate seconds to bottom of the hour (X:30)
+                        const now = new Date();
+                        const target = new Date(now);
+                        target.setMinutes(30, 0, 0);
+
+                        // If we're past 30 minutes, go to next hour's 30
+                        if (now.getMinutes() >= 30) {
+                            target.setHours(target.getHours() + 1);
+                        }
+
+                        targetEndTime = target.getTime();
+                        seconds = Math.floor((target - now) / 1000);
+                    } else if (preset === 'threeQuarterHour') {
+                        // Calculate seconds to 3/4 of the hour (X:45)
+                        const now = new Date();
+                        const target = new Date(now);
+                        target.setMinutes(45, 0, 0);
+
+                        // If we're past 45 minutes, go to next hour's 45
+                        if (now.getMinutes() >= 45) {
+                            target.setHours(target.getHours() + 1);
+                        }
+
+                        targetEndTime = target.getTime();
+                        seconds = Math.floor((target - now) / 1000);
+                    } else if (preset === 'topOfHour') {
+                        // Calculate seconds to top of the hour (X:00)
+                        const now = new Date();
+                        const target = new Date(now);
+                        target.setHours(target.getHours() + 1, 0, 0, 0);
+
+                        targetEndTime = target.getTime();
+                        seconds = Math.floor((target - now) / 1000);
+                    } else {
+                        seconds = preset;
+                        // For regular presets, no target end time
+                    }
+
+                    // Always update immediately, keeping running state
+                    // Pass targetEndTime for time-based presets to avoid rounding issues
+                    await setTimer(seconds, true, targetEndTime);
+                } catch (error) {
+                    console.error('Failed to set timer preset:', error);
+                }
+            }
+
+            async function adjustTimer(seconds) {
+                try {
+                    const response = await fetch('/api/timer/adjust', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ seconds })
+                    });
+                    const data = await response.json();
+                    updateDisplay(data.state);
+                } catch (error) {
+                    console.error('Failed to adjust timer:', error);
+                }
+            }
+
+            function parseTimeString(timeStr) {
+                const parts = timeStr.trim().split(':').map(p => parseInt(p, 10));
+
+                if (parts.length === 2) {
+                    // MM:SS
+                    return parts[0] * 60 + parts[1];
+                } else if (parts.length === 3) {
+                    // HH:MM:SS
+                    return parts[0] * 3600 + parts[1] * 60 + parts[2];
                 }
 
-                // Always update immediately, keeping running state
-                // Pass targetEndTime for time-based presets to avoid rounding issues
-                await setTimer(seconds, true, targetEndTime);
-            } catch (error) {
-                console.error('Failed to set timer preset:', error);
-            }
-        }
-
-        async function adjustTimer(seconds) {
-            try {
-                const response = await fetch('/api/timer/adjust', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ seconds })
-                });
-                const data = await response.json();
-                updateDisplay(data.state);
-            } catch (error) {
-                console.error('Failed to adjust timer:', error);
-            }
-        }
-
-        function parseTimeString(timeStr) {
-            const parts = timeStr.trim().split(':').map(p => parseInt(p, 10));
-
-            if (parts.length === 2) {
-                // MM:SS
-                return parts[0] * 60 + parts[1];
-            } else if (parts.length === 3) {
-                // HH:MM:SS
-                return parts[0] * 3600 + parts[1] * 60 + parts[2];
-            }
-
-            return null;
-        }
-
-        function setCustomTime() {
-            const input = document.getElementById('customTime');
-            const timeStr = input.value;
-            const seconds = parseTimeString(timeStr);
-
-            if (seconds !== null && seconds >= 0) {
-                setTimer(seconds);
-                input.value = '';
-            } else {
-                alert('Invalid time format. Use MM:SS or HH:MM:SS');
-            }
-        }
-
-        function parseTimeOfDay(timeStr) {
-            // Parse 12-hour format (e.g., "2:30 PM") or 24-hour format (e.g., "14:30")
-            timeStr = timeStr.trim();
-
-            let hours, minutes;
-            const ampmMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-            const twentyFourHourMatch = timeStr.match(/^(\d{1,2}):(\d{2})$/);
-
-            if (ampmMatch) {
-                // 12-hour format
-                hours = parseInt(ampmMatch[1], 10);
-                minutes = parseInt(ampmMatch[2], 10);
-                const ampm = ampmMatch[3].toUpperCase();
-
-                if (ampm === 'PM' && hours !== 12) {
-                    hours += 12;
-                } else if (ampm === 'AM' && hours === 12) {
-                    hours = 0;
-                }
-            } else if (twentyFourHourMatch) {
-                // 24-hour format
-                hours = parseInt(twentyFourHourMatch[1], 10);
-                minutes = parseInt(twentyFourHourMatch[2], 10);
-            } else {
                 return null;
             }
 
-            if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-                return null;
+            function setCustomTime() {
+                const input = document.getElementById('customTime');
+                const timeStr = input.value;
+                const seconds = parseTimeString(timeStr);
+
+                if (seconds !== null && seconds >= 0) {
+                    setTimer(seconds);
+                    input.value = '';
+                } else {
+                    alert('Invalid time format. Use MM:SS or HH:MM:SS');
+                }
             }
 
-            return { hours, minutes };
-        }
+            function parseTimeOfDay(timeStr) {
+                // Parse 12-hour format (e.g., "2:30 PM") or 24-hour format (e.g., "14:30")
+                timeStr = timeStr.trim();
 
-        function setCountDownToTime() {
-            const input = document.getElementById('countDownTime');
-            const timeStr = input.value;
-            const parsedTime = parseTimeOfDay(timeStr);
+                let hours, minutes;
+                const ampmMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                const twentyFourHourMatch = timeStr.match(/^(\d{1,2}):(\d{2})$/);
 
-            if (!parsedTime) {
-                alert('Invalid time format. Use 12-hour (e.g., "2:30 PM") or 24-hour (e.g., "14:30") format');
-                return;
-            }
+                if (ampmMatch) {
+                    // 12-hour format
+                    hours = parseInt(ampmMatch[1], 10);
+                    minutes = parseInt(ampmMatch[2], 10);
+                    const ampm = ampmMatch[3].toUpperCase();
 
-            const now = new Date();
-            const target = new Date(now);
-            target.setHours(parsedTime.hours, parsedTime.minutes, 0, 0);
-
-            // If target time has already passed today, set it for tomorrow
-            if (target <= now) {
-                target.setDate(target.getDate() + 1);
-            }
-
-            const seconds = Math.floor((target - now) / 1000);
-
-            if (seconds > 0) {
-                setTimer(seconds);
-                input.value = '';
-            } else {
-                alert('Time calculation error');
-            }
-        }
-
-        // Update settings UI (without adding listeners)
-        function updateSettingsUI() {
-            const settings = settingsManager.getAll();
-
-            // Load checkbox states
-            document.getElementById('showHours').checked = settings.showHours;
-            document.getElementById('showMinutes').checked = settings.showMinutes;
-            document.getElementById('showSeconds').checked = settings.showSeconds;
-            document.getElementById('showMilliseconds').checked = settings.showMilliseconds;
-            document.getElementById('countUpAfterZero').checked = settings.countUpAfterZero;
-            document.getElementById('showTimeOfDay').checked = settings.showTimeOfDay;
-
-            // Load color values
-            document.getElementById('colorNormal').value = settings.colorNormal;
-            document.getElementById('colorWarning').value = settings.colorWarning;
-            document.getElementById('colorCritical').value = settings.colorCritical;
-        }
-
-        // Initialize settings UI and attach event listeners (call once on startup)
-        function initializeSettings() {
-            updateSettingsUI();
-
-            // Add change listeners (only once)
-            ['showHours', 'showMinutes', 'showSeconds', 'showMilliseconds', 'countUpAfterZero', 'showTimeOfDay'].forEach(id => {
-                document.getElementById(id).addEventListener('change', (e) => {
-                    settingsManager.set(id, e.target.checked);
-                    if (cachedState) {
-                        updateDisplay(cachedState);
+                    if (ampm === 'PM' && hours !== 12) {
+                        hours += 12;
+                    } else if (ampm === 'AM' && hours === 12) {
+                        hours = 0;
                     }
-                    // Broadcast to other clients
-                    broadcastSettings();
+                } else if (twentyFourHourMatch) {
+                    // 24-hour format
+                    hours = parseInt(twentyFourHourMatch[1], 10);
+                    minutes = parseInt(twentyFourHourMatch[2], 10);
+                } else {
+                    return null;
+                }
+
+                if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+                    return null;
+                }
+
+                return { hours, minutes };
+            }
+
+            function setCountDownToTime() {
+                const input = document.getElementById('countDownTime');
+                const timeStr = input.value;
+                const parsedTime = parseTimeOfDay(timeStr);
+
+                if (!parsedTime) {
+                    alert('Invalid time format. Use 12-hour (e.g., "2:30 PM") or 24-hour (e.g., "14:30") format');
+                    return;
+                }
+
+                const now = new Date();
+                const target = new Date(now);
+                target.setHours(parsedTime.hours, parsedTime.minutes, 0, 0);
+
+                // If target time has already passed today, set it for tomorrow
+                if (target <= now) {
+                    target.setDate(target.getDate() + 1);
+                }
+
+                const seconds = Math.floor((target - now) / 1000);
+
+                if (seconds > 0) {
+                    setTimer(seconds);
+                    input.value = '';
+                } else {
+                    alert('Time calculation error');
+                }
+            }
+
+            // Update settings UI (without adding listeners)
+            function updateSettingsUI() {
+                const settings = settingsManager.getAll();
+
+                // Load checkbox states
+                document.getElementById('showHours').checked = settings.showHours;
+                document.getElementById('showMinutes').checked = settings.showMinutes;
+                document.getElementById('showSeconds').checked = settings.showSeconds;
+                document.getElementById('showMilliseconds').checked = settings.showMilliseconds;
+                document.getElementById('countUpAfterZero').checked = settings.countUpAfterZero;
+                document.getElementById('showTimeOfDay').checked = settings.showTimeOfDay;
+
+                // Load color values
+                document.getElementById('colorNormal').value = settings.colorNormal;
+                document.getElementById('colorWarning').value = settings.colorWarning;
+                document.getElementById('colorCritical').value = settings.colorCritical;
+            }
+
+            // Initialize settings UI and attach event listeners (call once on startup)
+            function initializeSettings() {
+                updateSettingsUI();
+
+                // Add change listeners (only once)
+                ['showHours', 'showMinutes', 'showSeconds', 'showMilliseconds', 'countUpAfterZero', 'showTimeOfDay'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', (e) => {
+                        settingsManager.set(id, e.target.checked);
+                        if (cachedState) {
+                            updateDisplay(cachedState);
+                        }
+                        // Broadcast to other clients
+                        broadcastSettings();
+                    });
                 });
+
+                ['colorNormal', 'colorWarning', 'colorCritical'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', (e) => {
+                        settingsManager.set(id, e.target.value);
+                        if (cachedState) {
+                            updateDisplay(cachedState);
+                        }
+                        // Broadcast to other clients
+                        broadcastSettings();
+                    });
+                });
+            }
+
+            // Allow Enter key to submit custom time
+            document.getElementById('customTime').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    setCustomTime();
+                }
             });
 
-            ['colorNormal', 'colorWarning', 'colorCritical'].forEach(id => {
-                document.getElementById(id).addEventListener('input', (e) => {
-                    settingsManager.set(id, e.target.value);
-                    if (cachedState) {
-                        updateDisplay(cachedState);
-                    }
-                    // Broadcast to other clients
-                    broadcastSettings();
-                });
+            // Allow Enter key to submit count down time
+            document.getElementById('countDownTime').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    setCountDownToTime();
+                }
             });
-        }
 
-        // Allow Enter key to submit custom time
-        document.getElementById('customTime').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                setCustomTime();
-            }
-        });
+            // Initialize settings
+            initializeSettings();
 
-        // Allow Enter key to submit count down time
-        document.getElementById('countDownTime').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                setCountDownToTime();
-            }
-        });
+            // Send current settings to server on startup (so server state matches localStorage)
+            broadcastSettings();
 
-        // Initialize settings
-        initializeSettings();
+            // Connect to WebSocket for real-time updates
+            connectWebSocket();
 
-        // Send current settings to server on startup (so server state matches localStorage)
-        broadcastSettings();
+            // Update display locally at 10fps for smooth countdown when running
+            localUpdateInterval = setInterval(updateLocalDisplay, 100);
 
-        // Connect to WebSocket for real-time updates
-        connectWebSocket();
+            // Update clock every second
+            setInterval(() => {
+                if (cachedState) {
+                    updateDisplay(cachedState);
+                }
+            }, 1000);
 
-        // Update display locally at 10fps for smooth countdown when running
-        localUpdateInterval = setInterval(updateLocalDisplay, 100);
-
-        // Update clock every second
-        setInterval(() => {
-            if (cachedState) {
-                updateDisplay(cachedState);
-            }
-        }, 1000);
-
-        // Initial fetch (WebSocket will handle updates after this)
-        fetchTimerState();
-    </script>
+            // Initial fetch (WebSocket will handle updates after this)
+            fetchTimerState();
+        </script>
 </body>
 
 </html>
