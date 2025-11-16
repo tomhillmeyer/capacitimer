@@ -113,11 +113,13 @@ button:active {
 .btn-start {
     background: #44ff44;
     color: #000;
+    min-height: 150px;
 }
 
 .btn-pause {
     background: #ffaa00;
     color: #000;
+    min-height: 150px;
 }
 
 .btn-reset {
@@ -126,8 +128,9 @@ button:active {
 }
 
 .btn-preset {
-    background: #4488ff;
+    background: #BF4E34;
     color: #fff;
+    height: 100px;
 }
 
 .btn-adjust {
@@ -169,7 +172,7 @@ input[type="text"] {
 .section h2 {
     margin-bottom: 1rem;
     font-size: 1.3rem;
-    color: #4488ff;
+    color: #BF4E34;
 }
 
 .section h3 {

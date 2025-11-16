@@ -29,7 +29,7 @@
         }
 
         .header img {
-            height: 50px;
+            height: 30px;
         }
 
         .settings-btn {
@@ -326,7 +326,8 @@
 <body>
     <div class="header">
         <img src="/capacitimer-wordmark.png" alt="Capacitimer">
-        <button class="settings-btn" onclick="toggleSettings()">Settings</button>
+        <button class="settings-btn" onclick="toggleSettings()"><img src="/icons/gear.svg" alt="Settings"
+                style="height: 1.2em; vertical-align: middle;"></button>
     </div>
 
     <div class="main-layout">
@@ -365,8 +366,10 @@
 
                 <!-- Start/Reset Buttons -->
                 <div class="control-buttons">
-                    <button class="btn-start" id="startPauseBtn" onclick="toggleStartPause()">Start</button>
-                    <button class="btn-reset" onclick="resetTimer()">Reset</button>
+                    <button class="btn-start" id="startPauseBtn" onclick="toggleStartPause()"><img src="/icons/play.svg"
+                            alt="Play" style="height: 3em; vertical-align: middle;"></button>
+                    <button class="btn-reset" onclick="resetTimer()"><img src="/icons/reset.svg" alt="Reset"
+                            style="height: 3em; vertical-align: middle;"></button>
                 </div>
 
                 <!-- Adjustment Grid (2x2) -->
@@ -704,10 +707,10 @@
                 // Update Start/Pause button
                 const startPauseBtn = document.getElementById('startPauseBtn');
                 if (state.isRunning) {
-                    startPauseBtn.textContent = 'Pause';
+                    startPauseBtn.innerHTML = '<img src="/icons/pause.svg" alt="Pause" style="height: 3em; vertical-align: middle;">';
                     startPauseBtn.className = 'btn-pause';
                 } else {
-                    startPauseBtn.textContent = 'Start';
+                    startPauseBtn.innerHTML = '<img src="/icons/play.svg" alt="Play" style="height: 3em; vertical-align: middle;">';
                     startPauseBtn.className = 'btn-start';
                 }
             }
