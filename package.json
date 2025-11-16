@@ -92,10 +92,14 @@
       "artifactName": "${productName}-${version}-windows-${arch}.${ext}"
     },
     "linux": {
-      "target": "deb",
+      "target": [
+        "deb",
+        "tar.gz"
+      ],
       "category": "Utility",
       "icon": "assets/capacitimer.png",
-      "artifactName": "${productName}-${version}-linux-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-linux-${arch}.${ext}",
+      "executableName": "capacitimer"
     },
     "nsis": {
       "oneClick": false,

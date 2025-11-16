@@ -65,10 +65,14 @@ function calculateTimeRemainingPrecise() {
 }
 
 function createWindow() {
+  // Check for --fullscreen flag in command line args
+  const isFullscreen = process.argv.includes('--fullscreen');
+
   mainWindow = new BrowserWindow({
     width: 1920,
     height: 1080,
-    fullscreen: false, // User can set fullscreen with F11 or programmatically
+    fullscreen: isFullscreen,
+    autoHideMenuBar: true,
     title: 'Capacitimer',
     icon: path.join(__dirname, '../assets/capacitimer.png'),
     webPreferences: {

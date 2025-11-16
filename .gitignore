@@ -16,6 +16,7 @@ dist-ssr
 setup
 out
 admin/
+dist
 
 # Editor directories and files
 .vscode/*

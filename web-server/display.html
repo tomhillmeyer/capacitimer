@@ -80,7 +80,9 @@
             // Show connection overlay
             document.getElementById('connectionOverlay').classList.add('active');
 
-            ws = new WebSocket('ws://localhost:3001');
+            // Use the current hostname to connect to WebSocket server
+            const wsHost = window.location.hostname;
+            ws = new WebSocket(`ws://${wsHost}:3001`);
 
             ws.onopen = () => {
                 console.log('WebSocket connected');
