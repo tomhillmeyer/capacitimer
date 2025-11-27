@@ -14,7 +14,7 @@ const controlHtmlPath = join(__dirname, '../web-server/control.html');
 let controlHtml = readFileSync(controlHtmlPath, 'utf-8');
 
 // Replace version placeholder with actual version
-controlHtml = controlHtml.replace(/v\d+\.\d+\.\d+\s*BETA/g, `v${version}`);
+controlHtml = controlHtml.replace(/v\d+\.\d+\.\d+(\s*BETA)?/g, `v${version}`);
 
 // Write back to control.html
 writeFileSync(controlHtmlPath, controlHtml, 'utf-8');
