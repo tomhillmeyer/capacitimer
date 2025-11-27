@@ -41,3 +41,15 @@ Installation instructions to run this app full screen on a Raspberry Pi or simil
 - Message displays
 
 - Counting up
+
+
+
+## Screenshots
+
+![Control](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control.png?raw=true)
+
+![Display](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/display.png?raw=true)
+
+![Web Display](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/web_display.png?raw=true)
+
+![Web Landing](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/web_landing.png?raw=true)
