@@ -44,12 +44,23 @@ Installation instructions to run this app full screen on a Raspberry Pi or simil
 
 
 
+
 ## Screenshots
+
+Control page `/control`
 
 ![Control](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control.png?raw=true)
 
+Display on desktop app
+
 ![Display](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/display.png?raw=true)
+
+Display page `/display`
 
 ![Web Display](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/web_display.png?raw=true)
 
+
+Landing page `/`
+
 ![Web Landing](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/web_landing.png?raw=true)
+
