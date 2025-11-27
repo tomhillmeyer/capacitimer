@@ -27,12 +27,12 @@ body {
 }
 
 .timer-value {
-    font-size: 20vw;
     font-weight: bold;
     font-family: monospace;
     line-height: 1;
     margin: 0;
     transition: color 0.3s ease;
+    white-space: nowrap;
 }
 
 .timer-status {
@@ -94,12 +94,12 @@ h1 {
 
 button {
     flex: 1;
-    padding: 1rem 2rem;
     font-size: 1.2rem;
     font-weight: bold;
     border: none;
     cursor: pointer;
     transition: all 0.2s;
+    border-radius: 5px;
 }
 
 button:hover {
@@ -113,13 +113,13 @@ button:active {
 .btn-start {
     background: #44ff44;
     color: #000;
-    min-height: 150px;
+    min-height: 140px;
 }
 
 .btn-pause {
     background: #ffaa00;
     color: #000;
-    min-height: 150px;
+    min-height: 140px;
 }
 
 .btn-reset {
@@ -130,7 +130,7 @@ button:active {
 .btn-preset {
     background: #BF4E34;
     color: #fff;
-    height: 100px;
+    height: 58px;
 }
 
 .btn-adjust {
@@ -138,6 +138,7 @@ button:active {
     color: #fff;
     flex: 0 1 auto;
     min-width: 80px;
+    min-height: 58px;
 }
 
 .preset-buttons {

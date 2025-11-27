@@ -49,7 +49,7 @@ function calculateTimeRemaining() {
 
   const now = Date.now();
   const remainingMs = Math.max(0, timerState.endTime - now);
-  const remaining = Math.ceil(remainingMs / 1000);
+  const remaining = Math.round(remainingMs / 1000);
   return remaining;
 }
 
@@ -73,6 +73,7 @@ function createWindow() {
     height: 1080,
     fullscreen: isFullscreen,
     autoHideMenuBar: true,
+    fullscreenable: true,
     title: 'Capacitimer',
     icon: path.join(__dirname, '../assets/capacitimer.png'),
     webPreferences: {
@@ -80,6 +81,18 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
     },
+  });
+
+  // Hide menu bar in fullscreen mode
+  mainWindow.setMenuBarVisibility(false);
+
+  // Listen for fullscreen changes to hide/show menu
+  mainWindow.on('enter-full-screen', () => {
+    mainWindow.setMenuBarVisibility(false);
+  });
+
+  mainWindow.on('leave-full-screen', () => {
+    mainWindow.setMenuBarVisibility(false);
   });
 
   // In development, load from vite dev server
@@ -100,6 +113,15 @@ function startWebServer() {
 
   expressApp.use(express.json());
   expressApp.use(express.static(path.join(__dirname, '../web-server')));
+
+  // Route aliases without .html extension
+  expressApp.get('/control', (req, res) => {
+    res.sendFile(path.join(__dirname, '../web-server/control.html'));
+  });
+
+  expressApp.get('/display', (req, res) => {
+    res.sendFile(path.join(__dirname, '../web-server/display.html'));
+  });
 
   // API endpoints
   expressApp.get('/api/timer', (req, res) => {
@@ -270,7 +292,8 @@ function startTimer() {
     timerState.timeRemaining = remaining;
     broadcastTimerUpdate();
 
-    if (remaining === 0) {
+    // Only stop if we reach 0 and countUpAfterZero is disabled
+    if (remaining === 0 && !currentSettings.countUpAfterZero) {
       stopTimer();
     }
   }, 100);
@@ -337,10 +360,15 @@ function resetTimer() {
 }
 
 function setTimer(seconds, keepRunning = false, targetEndTime = null) {
-  const wasRunning = timerState.isRunning;
+  // If targetEndTime is provided, calculate precise remaining time from it
+  let preciseRemaining = seconds;
+  if (targetEndTime) {
+    const now = Date.now();
+    preciseRemaining = Math.max(0, (targetEndTime - now) / 1000);
+  }
 
   timerState.timeRemaining = seconds;
-  timerState.pausedTimeRemaining = seconds;
+  timerState.pausedTimeRemaining = preciseRemaining;
   timerState.lastSetTime = seconds; // Remember this for reset
   timerState.initialTimeRemaining = seconds; // Track initial time for display
 
@@ -356,35 +384,36 @@ function setTimer(seconds, keepRunning = false, targetEndTime = null) {
     }
 
     broadcastTimerUpdate();
-  } else if (wasRunning && keepRunning) {
-    // If it was running and we want to keep it running, restart the timer
-    // Use the provided targetEndTime if available for precision
+  } else if (keepRunning) {
+    // keepRunning means we should keep/start the timer running after setting
+    timerState.isRunning = true;
+    timerState.isPaused = false;
+    timerState.startTime = Date.now();
+
+    // Use the provided targetEndTime if available for precision, otherwise calculate from seconds
     if (targetEndTime) {
-      timerState.isRunning = true;
-      timerState.isPaused = false;
-      timerState.startTime = Date.now();
       timerState.endTime = targetEndTime;
-
-      if (timerInterval) clearInterval(timerInterval);
-
-      timerInterval = setInterval(() => {
-        if (!timerState.isRunning) return;
-
-        const remaining = calculateTimeRemaining();
-        timerState.timeRemaining = remaining;
-        broadcastTimerUpdate();
-
-        if (remaining === 0) {
-          stopTimer();
-        }
-      }, 100);
-
-      timerState.timeRemaining = calculateTimeRemaining();
-      broadcastTimerUpdate();
     } else {
-      // No target end time provided, use normal startTimer
-      startTimer();
+      timerState.endTime = Date.now() + (preciseRemaining * 1000);
     }
+
+    if (timerInterval) clearInterval(timerInterval);
+
+    timerInterval = setInterval(() => {
+      if (!timerState.isRunning) return;
+
+      const remaining = calculateTimeRemaining();
+      timerState.timeRemaining = remaining;
+      broadcastTimerUpdate();
+
+      // Only stop if we reach 0 and countUpAfterZero is disabled
+      if (remaining === 0 && !currentSettings.countUpAfterZero) {
+        stopTimer();
+      }
+    }, 100);
+
+    timerState.timeRemaining = calculateTimeRemaining();
+    broadcastTimerUpdate();
   } else {
     // Not running, just broadcast
     broadcastTimerUpdate();

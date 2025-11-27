@@ -6,11 +6,12 @@
   },
   "description": "Speaker timer with full-screen display and web-based control",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "main": "src/main.js",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/inject-version.js",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

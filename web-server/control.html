@@ -32,6 +32,38 @@
             height: 30px;
         }
 
+        .header-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-meta {
+            font-size: 0.75rem;
+            color: #888;
+            line-height: 1.3;
+        }
+
+        @media (max-width: 600px) {
+            .header-meta {
+                display: none;
+            }
+        }
+
+        /* Hide mobile header in desktop two-column view */
+        @media (min-width: 900px) {
+            .header {
+                display: none;
+            }
+        }
+
+        /* Hide desktop header in mobile view */
+        @media (max-width: 899px) {
+            .column-header {
+                display: none !important;
+            }
+        }
+
         .settings-btn {
             background: #262626;
             color: #fff;
@@ -69,11 +101,11 @@
         .modal-content {
             background: #1a1a1a;
             border-radius: 12px;
-            padding: 2rem;
-            max-width: 600px;
+            max-width: 700px;
             width: 90%;
             max-height: 80vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
             position: relative;
         }
 
@@ -81,7 +113,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 2rem 2rem 0 2rem;
             margin-bottom: 1.5rem;
+            flex-shrink: 0;
+            background: #1a1a1a;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-body {
+            padding: 0 2rem 2rem 2rem;
+            overflow-y: auto;
+            flex: 1;
         }
 
         .modal-header h2 {
@@ -105,6 +147,84 @@
         .modal-close:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 700px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .settings-section.left-section {
+                order: 2;
+            }
+
+            .settings-section.right-section {
+                order: 1;
+            }
+        }
+
+        .settings-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .settings-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .settings-group h3 {
+            font-size: 1.1rem;
+            margin: 0;
+            color: #aaa;
+        }
+
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .toggle-item:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-item span {
+            flex: 1;
+        }
+
+        .color-threshold-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: nowrap;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .color-threshold-item:last-child {
+            border-bottom: none;
+        }
+
+        .color-threshold-item input[type="color"] {
+            flex-shrink: 0;
+        }
+
+        .color-threshold-item input[type="text"] {
+            flex: 1;
+            min-width: 80px;
         }
 
         /* Connection Lost Overlay */
@@ -175,27 +295,91 @@
 
         /* Two column layout on wider screens */
         @media (min-width: 900px) {
+            .main-layout {
+                overflow: hidden;
+                /* Disable scroll on parent */
+            }
+
             .main-content {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 0;
                 max-width: none;
                 padding: 0;
+                height: 100%;
             }
 
             .column {
                 display: flex;
                 flex-direction: column;
-                gap: 1rem;
-                padding: 2rem;
                 overflow-y: auto;
                 overflow-x: hidden;
-                border-right: 2px solid #333;
-                min-height: 0;
+                height: 100%;
             }
 
-            .column:last-child {
-                border-right: none;
+            /* Left column with header and border */
+            .column.left-column {
+                border-right: 2px solid #333;
+            }
+
+            .column.right-column {
+                order: 2;
+            }
+
+            .column-header {
+                display: none;
+                /* Hidden on mobile */
+            }
+
+            .column.left-column .column-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 2rem 2rem 1rem 2rem;
+                position: sticky;
+                top: 0;
+                background: #1a1a1a;
+                z-index: 10;
+                flex-shrink: 0;
+            }
+
+            .column.left-column .column-header img {
+                height: 30px;
+            }
+
+            /* Add padding to column content */
+            .column > .section {
+                margin: 0 2rem 1rem 2rem;
+            }
+
+            .column > .section:first-of-type {
+                margin-top: 0;
+            }
+
+            .column > .section:last-child {
+                margin-bottom: 2rem;
+            }
+
+            /* Add top padding to left column for first section after header */
+            .column.left-column > .section:first-of-type {
+                margin-top: 1rem;
+            }
+
+            /* Right column spacing */
+            .column.right-column {
+                padding: 2rem;
+                gap: 1rem;
+            }
+        }
+
+        /* Mobile: ensure right column content appears first and add spacing */
+        @media (max-width: 899px) {
+            .column.right-column {
+                order: -1;
+            }
+
+            .column.right-column > * + * {
+                margin-top: 1rem;
             }
         }
 
@@ -243,12 +427,12 @@
         }
 
         .output-preview .timer-value {
-            font-size: 20cqi;
             font-weight: bold;
             font-family: monospace;
             line-height: 1;
             margin: 0;
             transition: color 0.3s ease;
+            white-space: nowrap;
         }
 
         .output-preview .timer-status {
@@ -270,6 +454,8 @@
             padding: 1rem;
             border-radius: 8px;
             text-align: center;
+            display: flex;
+            justify-content: space-between;
         }
 
         .info-box h3 {
@@ -325,15 +511,69 @@
 
 <body>
     <div class="header">
-        <img src="/capacitimer-wordmark.png" alt="Capacitimer">
+        <div class="header-info">
+            <img src="/capacitimer-wordmark.png" alt="Capacitimer">
+            <div class="header-meta">
+                <div>v0.1.0</div>
+                <div>Created by Tom Hillmeyer</div>
+            </div>
+        </div>
         <button class="settings-btn" onclick="toggleSettings()"><img src="/icons/gear.svg" alt="Settings"
                 style="height: 1.2em; vertical-align: middle;"></button>
     </div>
 
     <div class="main-layout">
         <div class="main-content">
-            <!-- Column 1: Preview, Info Grid, and Controls -->
-            <div class="column">
+            <!-- Left Column: Presets (with header in desktop view) -->
+            <div class="column left-column">
+                <!-- Header (only visible in desktop two-column view) -->
+                <div class="column-header">
+                    <div class="header-info">
+                        <img src="/capacitimer-wordmark.png" alt="Capacitimer">
+                        <div class="header-meta">
+                            <div>v0.1.0</div>
+                            <div>Created by Tom Hillmeyer</div>
+                        </div>
+                    </div>
+                    <button class="settings-btn" onclick="toggleSettings()"><img src="/icons/gear.svg" alt="Settings"
+                            style="height: 1.2em; vertical-align: middle;"></button>
+                </div>
+
+                <div class="section">
+                    <h2>Presets</h2>
+                    <div class="preset-buttons">
+                        <button class="btn-preset" onclick="setTimerPreset('quarterHour')">Next 00:15</button>
+                        <button class="btn-preset" onclick="setTimerPreset('bottomOfHour')">Next 00:30</button>
+                        <button class="btn-preset" onclick="setTimerPreset('threeQuarterHour')">Next 00:45</button>
+                        <button class="btn-preset" onclick="setTimerPreset('topOfHour')">Next 00:00</button>
+                        <button class="btn-preset" onclick="setTimerPreset(60)">1 min</button>
+                        <button class="btn-preset" onclick="setTimerPreset(300)">5 min</button>
+                        <button class="btn-preset" onclick="setTimerPreset(600)">10 min</button>
+                        <button class="btn-preset" onclick="setTimerPreset(1800)">30 min</button>
+                        <button class="btn-preset" onclick="setTimerPreset(3600)">60 min</button>
+                        <button class="btn-preset" onclick="setTimerPreset(5400)">90 min</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Custom Time</h2>
+                    <div class="custom-time">
+                        <input type="text" id="customTime" placeholder="MM:SS or HH:MM:SS" />
+                        <button class="btn-preset" onclick="setCustomTime()">Set Time</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Count Down to Time</h2>
+                    <div class="custom-time">
+                        <input type="text" id="countDownTime" placeholder="e.g., 2:30 PM or 14:30" />
+                        <button class="btn-preset" onclick="setCountDownToTime()">Count Down</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Preview, Info Grid, and Controls -->
+            <div class="column right-column">
                 <!-- Output Preview -->
                 <div class="output-preview-wrapper">
                     <div class="output-preview">
@@ -380,41 +620,6 @@
                     <button class="btn-adjust" onclick="adjustTimer(-300)">-5 min</button>
                 </div>
             </div>
-
-            <!-- Column 2: Presets -->
-            <div class="column">
-                <div class="section">
-                    <h2>Presets</h2>
-                    <div class="preset-buttons">
-                        <button class="btn-preset" onclick="setTimerPreset('quarterHour')">Quarter Hour</button>
-                        <button class="btn-preset" onclick="setTimerPreset('bottomOfHour')">Bottom of Hour</button>
-                        <button class="btn-preset" onclick="setTimerPreset('threeQuarterHour')">3/4 Hour</button>
-                        <button class="btn-preset" onclick="setTimerPreset('topOfHour')">Top of Hour</button>
-                        <button class="btn-preset" onclick="setTimerPreset(60)">1 min</button>
-                        <button class="btn-preset" onclick="setTimerPreset(300)">5 min</button>
-                        <button class="btn-preset" onclick="setTimerPreset(600)">10 min</button>
-                        <button class="btn-preset" onclick="setTimerPreset(1800)">30 min</button>
-                        <button class="btn-preset" onclick="setTimerPreset(3600)">60 min</button>
-                        <button class="btn-preset" onclick="setTimerPreset(5400)">90 min</button>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <h2>Custom Time</h2>
-                    <div class="custom-time">
-                        <input type="text" id="customTime" placeholder="MM:SS or HH:MM:SS" />
-                        <button class="btn-preset" onclick="setCustomTime()">Set Time</button>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <h2>Count Down to Time</h2>
-                    <div class="custom-time">
-                        <input type="text" id="countDownTime" placeholder="e.g., 2:30 PM or 14:30" />
-                        <button class="btn-preset" onclick="setCountDownToTime()">Count Down</button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Connection Lost Overlay -->
@@ -431,78 +636,84 @@
                     <h2>Settings</h2>
                     <button class="modal-close" onclick="toggleSettings()">Close</button>
                 </div>
-                <div style="display: grid; gap: 1.5rem;">
-                    <div>
-                        <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #aaa;">Display Units</h3>
-                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                            <div>
-                                <span>Hours</span>
-                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"
-                                    class="switch">
-                                    <input type="checkbox" id="showHours" checked>
-                                    <span class="slider round"></span>
-                                </label>
+                <div class="modal-body">
+                    <div class="settings-grid">
+                        <!-- Left Column: Display Units & Options -->
+                        <div class="settings-section left-section">
+                            <div class="settings-group">
+                                <h3>Display Units</h3>
+                                <div class="toggle-item">
+                                    <span>Hours</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="showHours" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                <div class="toggle-item">
+                                    <span>Minutes</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="showMinutes" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                <div class="toggle-item">
+                                    <span>Seconds</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="showSeconds" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                <div class="toggle-item">
+                                    <span>Milliseconds</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="showMilliseconds">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
                             </div>
-                            <div>
-                                <span>Minutes</span>
-                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"
-                                    class="switch">
-                                    <input type="checkbox" id="showMinutes" checked>
-                                    <span class="slider round"></span>
-                                </label>
+
+                            <div class="settings-group">
+                                <h3>Display Options</h3>
+                                <div class="toggle-item">
+                                    <span>Count up after 0</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="countUpAfterZero">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                <div class="toggle-item">
+                                    <span>Show time of day</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="showTimeOfDay" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
                             </div>
-                            <div>
-                                <span>Seconds</span>
-                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"
-                                    class="switch">
-                                    <input type="checkbox" id="showSeconds" checked>
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                            <div>
-                                <span>Milliseconds</span>
-                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;"
-                                    class="switch">
-                                    <input type="checkbox" id="showMilliseconds">
-                                    <span class="slider round"></span>
-                                </label>
+                        </div>
+
+                        <!-- Right Column: Timer Colors -->
+                        <div class="settings-section right-section">
+                            <div class="settings-group">
+                                <h3>Timer Color Thresholds</h3>
+                                <div class="color-threshold-item">
+                                    <input type="color" id="colorNormal" value="#44ff44">
+                                    <span>at</span>
+                                    <input type="text" id="thresholdNormal" placeholder="HH:MM:SS">
+                                </div>
+                                <div class="color-threshold-item">
+                                    <input type="color" id="colorWarning" value="#ffaa00">
+                                    <span>at</span>
+                                    <input type="text" id="thresholdWarning" placeholder="HH:MM:SS">
+                                </div>
+                                <div class="color-threshold-item">
+                                    <input type="color" id="colorCritical" value="#ff4444">
+                                    <span>at</span>
+                                    <input type="text" id="thresholdCritical" placeholder="HH:MM:SS">
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    <div>
-                        <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #aaa;">Timer Colors</h3>
-                        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-                            <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span>Normal:</span>
-                                <input type="color" id="colorNormal" value="#44ff44">
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span>Warning:</span>
-                                <input type="color" id="colorWarning" value="#ffaa00">
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                <span>Critical:</span>
-                                <input type="color" id="colorCritical" value="#ff4444">
-                            </label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #aaa;">Display Options</h3>
-                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                                <input type="checkbox" id="countUpAfterZero">
-                                <span>Count up after 0</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                                <input type="checkbox" id="showTimeOfDay" checked>
-                                <span>Show time of day</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 0.5rem;">
+                    <div style="margin-top: 1.5rem;">
                         <p style="font-size: 0.9rem; color: #666;">Note: Settings are stored locally and will apply to
                             all displays</p>
                     </div>
@@ -515,6 +726,62 @@
             let localUpdateInterval;
             let cachedState = null;
             let ws = null;
+            let previewFontSize = 20; // Font size in cqi units
+
+            // Calculate optimal font size for preview
+            function calculatePreviewFontSize() {
+                const previewValue = document.getElementById('previewTimerValue');
+                const container = previewValue.closest('.output-preview');
+                if (!container) return;
+
+                // Create a temporary element to measure text width
+                const temp = document.createElement('div');
+                temp.style.position = 'absolute';
+                temp.style.visibility = 'hidden';
+                temp.style.whiteSpace = 'nowrap';
+                temp.style.fontFamily = 'monospace';
+                temp.style.fontWeight = 'bold';
+
+                // Generate a sample text with worst-case width (all segments at max)
+                const settings = settingsManager.getAll();
+                let sampleText = '';
+                if (settings.showHours) sampleText += '88';
+                if (settings.showHours && (settings.showMinutes || settings.showSeconds)) sampleText += ':';
+                if (settings.showMinutes) sampleText += '88';
+                if (settings.showMinutes && settings.showSeconds) sampleText += ':';
+                if (settings.showSeconds) sampleText += '88';
+                if (settings.showMilliseconds && settings.showSeconds) sampleText += '.888';
+                if (!sampleText) sampleText = '888888'; // Fallback
+
+                temp.textContent = sampleText;
+                document.body.appendChild(temp);
+
+                // Binary search for optimal font size (in cqi units)
+                const containerWidth = container.clientWidth;
+                let minSize = 1;
+                let maxSize = 25;
+                let optimalSize = 20;
+
+                while (maxSize - minSize > 0.1) {
+                    const midSize = (minSize + maxSize) / 2;
+                    // Convert cqi to pixels: 1cqi = 1% of container width
+                    temp.style.fontSize = `${(midSize * containerWidth) / 100}px`;
+
+                    const textWidth = temp.offsetWidth;
+                    const availableWidth = containerWidth * 0.95; // Leave 5% padding
+
+                    if (textWidth <= availableWidth) {
+                        optimalSize = midSize;
+                        minSize = midSize;
+                    } else {
+                        maxSize = midSize;
+                    }
+                }
+
+                document.body.removeChild(temp);
+                previewFontSize = optimalSize;
+                previewValue.style.fontSize = `${previewFontSize}cqi`;
+            }
 
             // Toggle settings modal
             function toggleSettings() {
@@ -625,8 +892,15 @@
                 }
 
                 const now = Date.now();
-                const remainingMs = Math.max(0, state.endTime - now);
-                return remainingMs / 1000; // Return fractional seconds for millisecond precision
+                const remainingMs = state.endTime - now;
+
+                // If count up after zero is enabled and time is past endTime, return negative
+                if (settingsManager.get('countUpAfterZero') && remainingMs < 0) {
+                    return remainingMs / 1000; // Return negative fractional seconds
+                }
+
+                // Otherwise clamp to 0
+                return Math.max(0, remainingMs) / 1000;
             }
 
             function calculatePreciseTimeRemaining(state) {
@@ -636,8 +910,14 @@
                 }
 
                 const now = Date.now();
-                const remainingMs = Math.max(0, state.endTime - now);
-                return remainingMs / 1000;
+                const remainingMs = state.endTime - now;
+
+                // If count up after zero is enabled and time is past endTime, return negative
+                if (settingsManager.get('countUpAfterZero') && remainingMs < 0) {
+                    return remainingMs / 1000;
+                }
+
+                return Math.max(0, remainingMs) / 1000;
             }
 
             function updateDisplay(state) {
@@ -647,31 +927,27 @@
 
                 let timeRemaining = calculateTimeRemaining(state);
 
-                // Handle count up after zero
-                if (settingsManager.get('countUpAfterZero') && timeRemaining === 0 && state.isRunning) {
-                    // Calculate elapsed time since endTime
-                    const elapsed = Math.floor((Date.now() - state.endTime) / 1000);
-                    timeRemaining = -elapsed;
-                }
-
                 previewTimerValue.textContent = formatTime(timeRemaining);
-                previewTimerValue.style.color = getTimerColor(Math.abs(timeRemaining));
+
+                // Get the preview container to update background
+                const previewContainer = document.querySelector('.output-preview');
+
+                // Set red background and white text when counting up past zero
+                if (timeRemaining < 0) {
+                    if (previewContainer) previewContainer.style.backgroundColor = '#cc0000';
+                    previewTimerValue.style.color = '#ffffff';
+                } else {
+                    if (previewContainer) previewContainer.style.backgroundColor = '#000';
+                    previewTimerValue.style.color = getTimerColor(Math.abs(timeRemaining));
+                }
 
                 // Show time of day
                 const timeOfDay = formatTimeOfDay();
                 if (timeOfDay) {
                     previewTimerStatus.textContent = timeOfDay;
+                    previewTimerStatus.style.display = 'block';
                 } else {
-                    // Fallback to status if time of day is disabled
-                    if (state.isRunning) {
-                        previewTimerStatus.textContent = 'RUNNING';
-                    } else if (state.isPaused) {
-                        previewTimerStatus.textContent = 'PAUSED';
-                    } else if (Math.abs(timeRemaining) > 0) {
-                        previewTimerStatus.textContent = 'READY';
-                    } else {
-                        previewTimerStatus.textContent = "TIME'S UP";
-                    }
+                    previewTimerStatus.style.display = 'none';
                 }
 
                 // Update info boxes
@@ -755,6 +1031,7 @@
                 try {
                     const response = await fetch('/api/timer/start', { method: 'POST' });
                     const data = await response.json();
+                    cachedState = data.state;
                     updateDisplay(data.state);
                 } catch (error) {
                     console.error('Failed to start timer:', error);
@@ -793,6 +1070,7 @@
                 try {
                     const response = await fetch('/api/timer/reset', { method: 'POST' });
                     const data = await response.json();
+                    cachedState = data.state;
                     updateDisplay(data.state);
                 } catch (error) {
                     console.error('Failed to reset timer:', error);
@@ -811,6 +1089,7 @@
                         body: JSON.stringify(body)
                     });
                     const data = await response.json();
+                    cachedState = data.state;
                     updateDisplay(data.state);
                 } catch (error) {
                     console.error('Failed to set timer:', error);
@@ -875,9 +1154,11 @@
                         // For regular presets, no target end time
                     }
 
-                    // Always update immediately, keeping running state
+                    // If timer is running, keep it running with new time
+                    // If timer is not running, just set the time without starting
+                    const keepRunning = cachedState && cachedState.isRunning;
                     // Pass targetEndTime for time-based presets to avoid rounding issues
-                    await setTimer(seconds, true, targetEndTime);
+                    await setTimer(seconds, keepRunning, targetEndTime);
                 } catch (error) {
                     console.error('Failed to set timer preset:', error);
                 }
@@ -891,6 +1172,7 @@
                         body: JSON.stringify({ seconds })
                     });
                     const data = await response.json();
+                    cachedState = data.state;
                     updateDisplay(data.state);
                 } catch (error) {
                     console.error('Failed to adjust timer:', error);
@@ -911,13 +1193,13 @@
                 return null;
             }
 
-            function setCustomTime() {
+            async function setCustomTime() {
                 const input = document.getElementById('customTime');
                 const timeStr = input.value;
                 const seconds = parseTimeString(timeStr);
 
                 if (seconds !== null && seconds >= 0) {
-                    setTimer(seconds);
+                    await setTimer(seconds);
                     input.value = '';
                 } else {
                     alert('Invalid time format. Use MM:SS or HH:MM:SS');
@@ -958,7 +1240,7 @@
                 return { hours, minutes };
             }
 
-            function setCountDownToTime() {
+            async function setCountDownToTime() {
                 const input = document.getElementById('countDownTime');
                 const timeStr = input.value;
                 const parsedTime = parseTimeOfDay(timeStr);
@@ -980,7 +1262,7 @@
                 const seconds = Math.floor((target - now) / 1000);
 
                 if (seconds > 0) {
-                    setTimer(seconds);
+                    await setTimer(seconds);
                     input.value = '';
                 } else {
                     alert('Time calculation error');
@@ -1003,6 +1285,11 @@
                 document.getElementById('colorNormal').value = settings.colorNormal;
                 document.getElementById('colorWarning').value = settings.colorWarning;
                 document.getElementById('colorCritical').value = settings.colorCritical;
+
+                // Load threshold values as time strings
+                document.getElementById('thresholdNormal').value = settingsManager.secondsToTimeString(settings.thresholdNormal);
+                document.getElementById('thresholdWarning').value = settingsManager.secondsToTimeString(settings.thresholdWarning);
+                document.getElementById('thresholdCritical').value = settingsManager.secondsToTimeString(settings.thresholdCritical);
             }
 
             // Initialize settings UI and attach event listeners (call once on startup)
@@ -1015,6 +1302,10 @@
                         settingsManager.set(id, e.target.checked);
                         if (cachedState) {
                             updateDisplay(cachedState);
+                        }
+                        // Recalculate font size for time unit changes
+                        if (['showHours', 'showMinutes', 'showSeconds', 'showMilliseconds'].includes(id)) {
+                            calculatePreviewFontSize();
                         }
                         // Broadcast to other clients
                         broadcastSettings();
@@ -1031,6 +1322,39 @@
                         broadcastSettings();
                     });
                 });
+
+                // Add threshold time input listeners
+                ['thresholdNormal', 'thresholdWarning', 'thresholdCritical'].forEach(id => {
+                    const input = document.getElementById(id);
+
+                    input.addEventListener('blur', (e) => {
+                        const timeStr = e.target.value;
+                        const seconds = settingsManager.timeStringToSeconds(timeStr);
+
+                        if (seconds !== null && seconds >= 0) {
+                            settingsManager.set(id, seconds);
+                            // Update display with formatted value
+                            e.target.value = settingsManager.secondsToTimeString(seconds);
+                            if (cachedState) {
+                                updateDisplay(cachedState);
+                            }
+                            // Broadcast to other clients
+                            broadcastSettings();
+                        } else {
+                            // Revert to previous value
+                            e.target.value = settingsManager.secondsToTimeString(settingsManager.get(id));
+                        }
+                    });
+
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            e.target.blur();
+                        }
+                    });
+                });
+
+                // Recalculate font size on window resize
+                window.addEventListener('resize', calculatePreviewFontSize);
             }
 
             // Allow Enter key to submit custom time
@@ -1068,6 +1392,9 @@
 
             // Initial fetch (WebSocket will handle updates after this)
             fetchTimerState();
+
+            // Calculate preview font size on load (after a short delay to ensure layout is ready)
+            setTimeout(calculatePreviewFontSize, 100);
         </script>
 </body>
 

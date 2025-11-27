@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import type { TimerState } from './electron';
 
@@ -10,6 +10,9 @@ interface Settings {
   colorNormal: string;
   colorWarning: string;
   colorCritical: string;
+  thresholdNormal: number;
+  thresholdWarning: number;
+  thresholdCritical: number;
   countUpAfterZero: boolean;
   showTimeOfDay: boolean;
 }
@@ -22,6 +25,9 @@ const DEFAULT_SETTINGS: Settings = {
   colorNormal: '#44ff44',
   colorWarning: '#ffaa00',
   colorCritical: '#ff4444',
+  thresholdNormal: 300,  // 5:00
+  thresholdWarning: 60,  // 1:00
+  thresholdCritical: 0,  // 0:00
   countUpAfterZero: false,
   showTimeOfDay: true,
 };
@@ -40,6 +46,71 @@ function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [isConnected, setIsConnected] = useState(true);
+  const [fontSize, setFontSize] = useState<number>(20); // Font size in vw units
+  const timerValueRef = useRef<HTMLDivElement>(null);
+
+  // Calculate optimal font size when settings change or when timer starts
+  useEffect(() => {
+    const calculateFontSize = () => {
+      if (!timerValueRef.current) return;
+
+      const container = timerValueRef.current.parentElement;
+      if (!container) return;
+
+      // Create a temporary element to measure text width
+      const temp = document.createElement('div');
+      temp.style.position = 'absolute';
+      temp.style.visibility = 'hidden';
+      temp.style.whiteSpace = 'nowrap';
+      temp.style.fontFamily = 'monospace';
+      temp.style.fontWeight = 'bold';
+
+      // Generate a sample text with worst-case width (all segments at max)
+      // Use "8" as it's typically the widest digit in monospace fonts
+      let sampleText = '';
+      if (settings.showHours) sampleText += '88';
+      if (settings.showHours && (settings.showMinutes || settings.showSeconds)) sampleText += ':';
+      if (settings.showMinutes) sampleText += '88';
+      if (settings.showMinutes && settings.showSeconds) sampleText += ':';
+      if (settings.showSeconds) sampleText += '88';
+      if (settings.showMilliseconds && settings.showSeconds) sampleText += '.888';
+      if (!sampleText) sampleText = '888888'; // Fallback
+
+      temp.textContent = sampleText;
+      document.body.appendChild(temp);
+
+      // Binary search for optimal font size (in vw units)
+      const containerWidth = container.clientWidth;
+      let minSize = 1;
+      let maxSize = 25;
+      let optimalSize = 20;
+
+      while (maxSize - minSize > 0.1) {
+        const midSize = (minSize + maxSize) / 2;
+        temp.style.fontSize = `${midSize}vw`;
+
+        const textWidth = temp.offsetWidth;
+        const availableWidth = containerWidth * 0.95; // Leave 5% padding
+
+        if (textWidth <= availableWidth) {
+          optimalSize = midSize;
+          minSize = midSize;
+        } else {
+          maxSize = midSize;
+        }
+      }
+
+      document.body.removeChild(temp);
+      setFontSize(optimalSize);
+    };
+
+    // Calculate on settings change
+    calculateFontSize();
+
+    // Recalculate on window resize
+    window.addEventListener('resize', calculateFontSize);
+    return () => window.removeEventListener('resize', calculateFontSize);
+  }, [settings.showHours, settings.showMinutes, settings.showSeconds, settings.showMilliseconds]);
 
   useEffect(() => {
     // Load settings from localStorage on startup
@@ -104,9 +175,15 @@ function App() {
       setTimerState(prevState => {
         if (prevState.isRunning && prevState.endTime) {
           const now = Date.now();
-          const remainingMs = Math.max(0, prevState.endTime - now);
-          const remainingSeconds = remainingMs / 1000;
-          setDisplayTime(remainingSeconds);
+          const remainingMs = prevState.endTime - now;
+          let remainingSeconds = remainingMs / 1000;
+
+          // Handle count up after zero - let time go negative
+          if (settings.countUpAfterZero && remainingSeconds < 0) {
+            setDisplayTime(remainingSeconds); // Keep it negative
+          } else {
+            setDisplayTime(Math.max(0, remainingSeconds)); // Clamp to 0
+          }
         } else {
           // Use pausedTimeRemaining when paused to preserve milliseconds
           setDisplayTime(prevState.pausedTimeRemaining || prevState.timeRemaining);
@@ -127,7 +204,7 @@ function App() {
         ws.close();
       }
     };
-  }, []);
+  }, [settings.countUpAfterZero]);
 
   const formatTime = (seconds: number): string => {
     const isNegative = seconds < 0;
@@ -191,9 +268,22 @@ function App() {
   };
 
   const getTimerColor = (seconds: number): string => {
-    if (seconds <= 60) return settings.colorCritical;
-    if (seconds <= 300) return settings.colorWarning;
-    return settings.colorNormal;
+    // Sort thresholds in ascending order
+    const thresholds = [
+      { time: settings.thresholdCritical, color: settings.colorCritical },
+      { time: settings.thresholdWarning, color: settings.colorWarning },
+      { time: settings.thresholdNormal, color: settings.colorNormal }
+    ].sort((a, b) => a.time - b.time);
+
+    // Find the appropriate color based on time remaining
+    for (let i = thresholds.length - 1; i >= 0; i--) {
+      if (seconds >= thresholds[i].time) {
+        return thresholds[i].color;
+      }
+    }
+
+    // Default to the lowest threshold color
+    return thresholds[0].color;
   };
 
   const formatTimeOfDay = (date: Date): string => {
@@ -205,6 +295,26 @@ function App() {
     hours = hours ? hours : 12; // 0 becomes 12
 
     return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  };
+
+  // Determine background color and text color based on displayTime
+  const isNegativeTime = displayTime < 0;
+  const backgroundColor = isNegativeTime ? '#cc0000' : '#000000';
+
+  useEffect(() => {
+    document.body.style.backgroundColor = backgroundColor;
+    // Also update the timer-display element if it exists
+    const timerDisplay = document.querySelector('.timer-display');
+    if (timerDisplay instanceof HTMLElement) {
+      timerDisplay.style.backgroundColor = backgroundColor;
+    }
+  }, [backgroundColor]);
+
+  const getDisplayColor = (): string => {
+    if (isNegativeTime) {
+      return '#ffffff'; // White text when counting up
+    }
+    return getTimerColor(Math.abs(displayTime));
   };
 
   return (
@@ -238,8 +348,12 @@ function App() {
       )}
       <div className="timer-display">
         <div
+          ref={timerValueRef}
           className="timer-value"
-          style={{ color: getTimerColor(displayTime) }}
+          style={{
+            color: getDisplayColor(),
+            fontSize: `${fontSize}vw`
+          }}
         >
           {formatTime(displayTime)}
         </div>

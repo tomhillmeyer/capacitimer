@@ -29,8 +29,8 @@
             text-align: center;
         }
 
-        h1 {
-            font-size: 3rem;
+        .wordmark {
+            height: 80px;
             margin-bottom: 1rem;
         }
 
@@ -49,7 +49,6 @@
         a {
             display: block;
             padding: 1.5rem 2rem;
-            background: #4488ff;
             color: #fff;
             text-decoration: none;
             border-radius: 8px;
@@ -59,35 +58,42 @@
         }
 
         a:hover {
-            background: #5599ff;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(68, 136, 255, 0.3);
         }
 
         a:active {
             transform: translateY(0);
         }
 
+        .link-control {
+            background: #BF4E34;
+        }
+
+        .link-control:hover {
+            background: #d4584b;
+            box-shadow: 0 4px 12px rgba(191, 78, 52, 0.4);
+        }
+
         .link-display {
-            background: #44ff44;
-            color: #000;
+            background: transparent;
+            border: 2px solid #BF4E34;
+            color: #BF4E34;
         }
 
         .link-display:hover {
-            background: #55ff55;
-            box-shadow: 0 4px 12px rgba(68, 255, 68, 0.3);
+            background: rgba(191, 78, 52, 0.1);
+            box-shadow: 0 4px 12px rgba(191, 78, 52, 0.2);
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>Capacitimer</h1>
-        <p>Speaker Timer Web Server</p>
+        <img src="/capacitimer-wordmark.png" alt="Capacitimer" class="wordmark">
 
         <div class="links">
-            <a href="/control.html" class="link-control">🎛️ Control Page</a>
-            <a href="/display.html" class="link-display">📺 Display Page</a>
+            <a href="/control" class="link-control">Control Page</a>
+            <a href="/display" class="link-display">Display Page</a>
         </div>
     </div>
 </body>

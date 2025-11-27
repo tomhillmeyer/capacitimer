@@ -1,9 +1,43 @@
 
-![Logo](https://raw.githubusercontent.com/tomhillmeyer/capacitimer/refs/heads/main/assets/capacitimer-wordmark.png?token=GHSAT0AAAAAADPHEEUSF2CF4B6Z37B7QMTS2IYXBZQ)
+![Logo](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/capacitimer-wordmark.png?raw=true)
+
+A flexible, network-controllable speaker timer
+
+## How to use
+
+This app runs a web server at `localhost:80` and displays the timer output in the app itself.
+
+Since port 80 is HTTP's default, you can access the control and display pages at
+
+`YOUR_IP_ADDRESS/control` 
+
+`YOUR_IP_ADDRESS/display`
 
 
-# Capacitimer
+## Workflow
 
-A flexible, network-controllable speaker timer application.
+The original intention of this app was to run this app on a computer that is outputing the display, while controlling it by another computer on the same network.
+
+There is a display view on the web server, so you could run this headless on your network and use the web server display only.
+
+Finally, you could run the app on a computer on an external display and control it locally on a browser on another monitor.
 
 
+
+
+## Coming Soon
+
+Installation instructions to run this app full screen on a Raspberry Pi or similar, to create a plug-and-play network controllable timer device.
+## Upcoming Features
+
+- REST API / Bitfocus Companion control
+
+- Background color / images
+
+- Custom presets
+
+- Custom fonts
+
+- Message displays
+
+- Counting up

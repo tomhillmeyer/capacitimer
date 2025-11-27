@@ -74,6 +74,61 @@
         let localUpdateInterval;
         let cachedState = null;
         let ws = null;
+        let fontSize = 20; // Font size in vw units
+
+        // Calculate optimal font size for display
+        function calculateFontSize() {
+            const timerValue = document.getElementById('timerValue');
+            const container = timerValue.parentElement;
+            if (!container) return;
+
+            // Create a temporary element to measure text width
+            const temp = document.createElement('div');
+            temp.style.position = 'absolute';
+            temp.style.visibility = 'hidden';
+            temp.style.whiteSpace = 'nowrap';
+            temp.style.fontFamily = 'monospace';
+            temp.style.fontWeight = 'bold';
+
+            // Generate a sample text with worst-case width (all segments at max)
+            const settings = settingsManager.getAll();
+            let sampleText = '';
+            if (settings.showHours) sampleText += '88';
+            if (settings.showHours && (settings.showMinutes || settings.showSeconds)) sampleText += ':';
+            if (settings.showMinutes) sampleText += '88';
+            if (settings.showMinutes && settings.showSeconds) sampleText += ':';
+            if (settings.showSeconds) sampleText += '88';
+            if (settings.showMilliseconds && settings.showSeconds) sampleText += '.888';
+            if (!sampleText) sampleText = '888888'; // Fallback
+
+            temp.textContent = sampleText;
+            document.body.appendChild(temp);
+
+            // Binary search for optimal font size (in vw units)
+            const containerWidth = container.clientWidth;
+            let minSize = 1;
+            let maxSize = 25;
+            let optimalSize = 20;
+
+            while (maxSize - minSize > 0.1) {
+                const midSize = (minSize + maxSize) / 2;
+                temp.style.fontSize = `${midSize}vw`;
+
+                const textWidth = temp.offsetWidth;
+                const availableWidth = containerWidth * 0.95; // Leave 5% padding
+
+                if (textWidth <= availableWidth) {
+                    optimalSize = midSize;
+                    minSize = midSize;
+                } else {
+                    maxSize = midSize;
+                }
+            }
+
+            document.body.removeChild(temp);
+            fontSize = optimalSize;
+            timerValue.style.fontSize = `${fontSize}vw`;
+        }
 
         // WebSocket connection
         function connectWebSocket() {
@@ -100,9 +155,16 @@
                     updateDisplay(message.data);
                 } else if (message.type === 'settings-update') {
                     // Update settings from broadcast
+                    const timeUnitChanged = ['showHours', 'showMinutes', 'showSeconds', 'showMilliseconds'].some(
+                        key => message.data.hasOwnProperty(key)
+                    );
                     Object.keys(message.data).forEach(key => {
                         settingsManager.set(key, message.data[key]);
                     });
+                    // Recalculate font size if time units changed
+                    if (timeUnitChanged) {
+                        calculateFontSize();
+                    }
                     // Update display with new settings
                     if (cachedState) {
                         updateDisplay(cachedState);
@@ -139,8 +201,15 @@
             }
 
             const now = Date.now();
-            const remainingMs = Math.max(0, state.endTime - now);
-            return remainingMs / 1000; // Return fractional seconds for millisecond precision
+            const remainingMs = state.endTime - now;
+
+            // If count up after zero is enabled and time is past endTime, return negative
+            if (settingsManager.get('countUpAfterZero') && remainingMs < 0) {
+                return remainingMs / 1000; // Return negative fractional seconds
+            }
+
+            // Otherwise clamp to 0
+            return Math.max(0, remainingMs) / 1000;
         }
 
         function formatTimeOfDay() {
@@ -161,18 +230,22 @@
         function updateDisplay(state) {
             const timerValue = document.getElementById('timerValue');
             const timerStatus = document.getElementById('timerStatus');
+            const timerDisplay = document.querySelector('.timer-display');
 
             let timeRemaining = calculateTimeRemaining(state);
 
-            // Handle count up after zero
-            if (settingsManager.get('countUpAfterZero') && timeRemaining === 0 && state.isRunning) {
-                // Calculate elapsed time since endTime
-                const elapsed = Math.floor((Date.now() - state.endTime) / 1000);
-                timeRemaining = -elapsed;
-            }
-
             timerValue.textContent = formatTime(timeRemaining);
-            timerValue.style.color = getTimerColor(Math.abs(timeRemaining));
+
+            // Set red background and white text when counting up past zero
+            if (timeRemaining < 0) {
+                if (timerDisplay) timerDisplay.style.backgroundColor = '#cc0000';
+                document.body.style.backgroundColor = '#cc0000';
+                timerValue.style.color = '#ffffff';
+            } else {
+                if (timerDisplay) timerDisplay.style.backgroundColor = '#000000';
+                document.body.style.backgroundColor = '#000000';
+                timerValue.style.color = getTimerColor(Math.abs(timeRemaining));
+            }
 
             // Show time of day
             const timeOfDay = formatTimeOfDay();
@@ -218,6 +291,10 @@
 
         // Initial fetch (WebSocket will handle updates after this)
         fetchTimerState();
+
+        // Calculate font size on load and window resize
+        setTimeout(calculateFontSize, 100);
+        window.addEventListener('resize', calculateFontSize);
     </script>
 </body>
 

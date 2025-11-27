@@ -9,6 +9,9 @@ const DEFAULT_SETTINGS = {
     colorNormal: '#44ff44',
     colorWarning: '#ffaa00',
     colorCritical: '#ff4444',
+    thresholdNormal: 300,  // 5:00
+    thresholdWarning: 60,  // 1:00
+    thresholdCritical: 0,  // 0:00
     countUpAfterZero: false,
     showTimeOfDay: true
 };
@@ -147,9 +150,46 @@ class SettingsManager {
 
     // Get color based on time remaining
     getTimerColor(seconds) {
-        if (seconds <= 60) return this.settings.colorCritical;
-        if (seconds <= 300) return this.settings.colorWarning;
-        return this.settings.colorNormal;
+        // Sort thresholds in descending order
+        const thresholds = [
+            { time: this.settings.thresholdCritical, color: this.settings.colorCritical },
+            { time: this.settings.thresholdWarning, color: this.settings.colorWarning },
+            { time: this.settings.thresholdNormal, color: this.settings.colorNormal }
+        ].sort((a, b) => a.time - b.time);
+
+        // Find the appropriate color based on time remaining
+        for (let i = thresholds.length - 1; i >= 0; i--) {
+            if (seconds >= thresholds[i].time) {
+                return thresholds[i].color;
+            }
+        }
+
+        // Default to the lowest threshold color
+        return thresholds[0].color;
+    }
+
+    // Convert seconds to HH:MM:SS format
+    secondsToTimeString(totalSeconds) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = Math.floor(totalSeconds % 60);
+
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Convert time string to seconds (accepts MM:SS or HH:MM:SS for flexibility)
+    timeStringToSeconds(timeStr) {
+        const parts = timeStr.trim().split(':').map(p => parseInt(p, 10));
+
+        if (parts.length === 2) {
+            // MM:SS - treat as minutes:seconds
+            return parts[0] * 60 + parts[1];
+        } else if (parts.length === 3) {
+            // HH:MM:SS
+            return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+
+        return null;
     }
 }
 
