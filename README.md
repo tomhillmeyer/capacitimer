@@ -5,14 +5,19 @@ A flexible, network-controllable speaker timer
 
 ## How to use
 
-This app runs a web server at `localhost:80` and displays the timer output in the app itself.
+This app runs a web server at `localhost:80` and `capactimer.local:80`and displays the timer output in the app itself.
 
-Since port 80 is HTTP's default, you can access the control and display pages at
+Since port 80 is HTTP's default, you can access the control and display pages at:
 
 `YOUR_IP_ADDRESS/control` 
 
 `YOUR_IP_ADDRESS/display`
 
+You can also access them at the following, if you don't know the IP address of your server:
+
+`capactimer.local/control`
+
+`capacitimer.local/display`
 
 ## Workflow
 
