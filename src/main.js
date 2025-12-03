@@ -1,17 +1,16 @@
-import electron from 'electron';
-console.log('Electron import:', electron);
-const { app, BrowserWindow, ipcMain } = electron;
+import { app, BrowserWindow, ipcMain } from 'electron';
 import express from 'express';
 import { WebSocketServer } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Bonjour } from 'bonjour-service';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-console.log('App:', app);
 
 let mainWindow = null;
 let webServer = null;
 let wss = null;
+let bonjourService = null;
 const WS_PORT = 3001;
 
 // Timer state
@@ -182,8 +181,22 @@ function startWebServer() {
     webServer = expressApp.listen(port)
       .on('listening', () => {
         console.log(`Web server running on http://localhost:${port}`);
-        console.log(`Control page: http://localhost:${port}/control.html`);
-        console.log(`Display page: http://localhost:${port}/display.html`);
+        console.log(`Control page: http://localhost:${port}/control`);
+        console.log(`Display page: http://localhost:${port}/display`);
+
+        // Start mDNS/Bonjour service
+        const bonjour = new Bonjour();
+        bonjourService = bonjour.publish({
+          name: 'capacitimer',
+          type: 'http',
+          port: port,
+          host: 'capacitimer.local',
+          txt: {
+            path: '/'
+          }
+        });
+
+        console.log(`mDNS service published - accessible at http://capacitimer.local${port === 80 ? '' : ':' + port}`);
       })
       .on('error', (err) => {
         if (err.code === 'EACCES') {
@@ -493,6 +506,9 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  if (bonjourService) {
+    bonjourService.stop();
+  }
   if (webServer) {
     webServer.close();
   }

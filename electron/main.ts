@@ -1,10 +1,12 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import express from 'express';
 import * as path from 'path';
+import Bonjour from 'bonjour-service';
 
 let mainWindow: BrowserWindow | null = null;
 let webServer: any = null;
-const PORT = 3000;
+let bonjourService: any = null;
+const PORT = 80;
 
 // Timer state
 let timerState = {
@@ -82,6 +84,19 @@ function startWebServer() {
     console.log(`Web server running on http://localhost:${PORT}`);
     console.log(`Control page: http://localhost:${PORT}/control.html`);
     console.log(`Display page: http://localhost:${PORT}/display.html`);
+
+    // Start mDNS/Bonjour service
+    const bonjour = new Bonjour();
+    bonjourService = bonjour.publish({
+      name: 'Capacitimer',
+      type: 'http',
+      port: PORT,
+      txt: {
+        path: '/'
+      }
+    });
+
+    console.log('mDNS service published - accessible at http://capacitimer.local:' + PORT);
   });
 }
 
@@ -205,6 +220,9 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  if (bonjourService) {
+    bonjourService.stop();
+  }
   if (webServer) {
     webServer.close();
   }
