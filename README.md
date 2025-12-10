@@ -30,9 +30,33 @@ Finally, you could run the app on a computer on an external display and control 
 
 
 
-## Coming Soon
+## Installation
 
-Installation instructions to run this app full screen on a Raspberry Pi or similar, to create a plug-and-play network controllable timer device.
+### Linux Server Installation (Raspberry Pi / Intel NUC)
+
+One-line install for Raspberry Pi (Pi OS/Pi OS Lite) or Intel NUC (Ubuntu):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tomhillmeyer/capacitimer/main/install.sh | bash
+```
+
+After installation completes, reboot:
+```bash
+sudo reboot
+```
+
+The system will automatically boot to fullscreen timer display. Control it from any device on your network at `http://DEVICE_IP/control.html`
+
+For detailed instructions, see [QUICK-START.md](QUICK-START.md).
+
+### Desktop Installation
+
+Download the latest release for your platform:
+- **macOS**: `Capacitimer-X.X.X-mac-arm64.dmg` (Apple Silicon) or `Capacitimer-X.X.X-mac-x64.dmg` (Intel)
+- **Windows**: `Capacitimer-X.X.X-windows-x64.exe`
+- **Linux Desktop**: `Capacitimer-X.X.X-linux-amd64.deb` or `.tar.gz`
+
+Get the latest releases at: https://github.com/tomhillmeyer/capacitimer/releases
 ## Upcoming Features
 
 - REST API / Bitfocus Companion control

@@ -1,47 +1,57 @@
 # Capacitimer Linux Server - Quick Start
 
-## One-Time Setup (From Your Mac)
+## Automatic Installation (Recommended)
 
-1. **Build the Linux package:**
+**One-line install** for Raspberry Pi (Pi OS/Pi OS Lite) or Intel NUC (Ubuntu):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tomhillmeyer/capacitimer/main/install.sh | bash
+```
+
+This script will:
+- Auto-detect your architecture (ARM64 for Raspberry Pi, AMD64 for Intel NUC)
+- Download the latest Capacitimer release from GitHub
+- Install system dependencies (xorg, openbox, etc.)
+- Configure auto-login and fullscreen display
+- Grant port 80 binding capability
+
+After installation completes:
+```bash
+sudo reboot
+```
+
+## Manual Installation (Alternative)
+
+If you prefer to manually install or need to use a local .deb file:
+
+1. **Build the Linux package (from your Mac):**
    ```bash
+   # For Intel NUC (amd64):
    npm run dist:linux:intel
+
+   # For Raspberry Pi (arm64):
+   npm run dist:linux:arm
    ```
 
-   This creates two files in `out/`:
-   - `Capacitimer-1.0.0-linux-amd64.deb` (Debian package - use this)
-   - `Capacitimer-1.0.0-linux-x64.tar.gz` (archive)
+   This creates files in `out/`:
+   - `Capacitimer-1.0.0-linux-amd64.deb` (Intel/AMD)
+   - `Capacitimer-1.0.0-linux-arm64.deb` (Raspberry Pi)
 
-2. **Copy to NUC:**
+2. **Copy to device:**
    ```bash
-   # Replace with your NUC's username and IP
-   scp out/Capacitimer-*-linux-amd64.deb capacitimer@192.168.1.146:~/
-   scp install-linux-server.sh capacitimer@192.168.1.146:~/
+   # Replace with your device's username and IP
+   scp out/Capacitimer-*-linux-*.deb user@192.168.1.146:~/
+   scp install-linux-server.sh user@192.168.1.146:~/
    ```
 
-   **Important:** Both files MUST be copied to the same directory (home directory `~`)
-
-3. **Verify files on NUC (via SSH):**
+3. **Install on device:**
    ```bash
-   ssh capacitimer@192.168.1.146
-   ls -lh ~/Capacitimer-*-linux-amd64.deb ~/install-linux-server.sh
-   ```
-
-   You should see both files listed.
-
-4. **Install on NUC:**
-   ```bash
+   ssh user@192.168.1.146
    chmod +x install-linux-server.sh
    sudo ./install-linux-server.sh
    ```
 
-   The script will:
-   - Install system dependencies
-   - Install the .deb package
-   - Configure auto-login and X server
-   - Grant port 80 binding capability
-   - Verify installation
-
-5. **Reboot:**
+4. **Reboot:**
    ```bash
    sudo reboot
    ```
