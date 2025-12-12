@@ -57,9 +57,45 @@ Download the latest release for your platform:
 - **Linux Desktop**: `Capacitimer-X.X.X-linux-amd64.deb` or `.tar.gz`
 
 Get the latest releases at: https://github.com/tomhillmeyer/capacitimer/releases
+
+## API (beta)
+
+Capacitimer provides both a REST API and WebSocket interface for remote control and integration with external systems. Control the timer programmatically, integrate with automation tools, or build custom interfaces.
+
+For complete API documentation including all endpoints, WebSocket events, and integration examples, see [API.md](API.md).
+
+NOTE: API commands subject to change in future versions
+
+### Quick Start
+
+```bash
+# Get timer state
+curl http://localhost/api/timer
+
+# Start timer
+curl -X POST http://localhost/api/timer/start
+
+# Set timer to 5 minutes and start
+curl -X POST http://localhost/api/timer/set \
+  -H "Content-Type: application/json" \
+  -d '{"seconds": 300, "keepRunning": true}'
+```
+
+## Integrations
+
+### Bitfocus Companion Module
+
+A Companion module for Capacitimer is currently in development, allowing control via Stream Deck and other Companion-compatible devices.
+
+**Repository**: https://github.com/tomhillmeyer/companion-module-capacitimer
+
+The module will provide:
+- Timer control actions (start, pause, reset, set time, adjust time)
+- Real-time feedback and variables via WebSocket
+- Dynamic button states based on timer status
+
 ## Upcoming Features
 
-- REST API / Bitfocus Companion control
 
 - Background color / images
 
