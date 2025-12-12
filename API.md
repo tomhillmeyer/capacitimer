@@ -483,6 +483,6 @@ The REST API does not currently implement CORS headers. If accessing from a web 
 ---
 
 ## Version
-This documentation is for Capacitimer v1.1.0
+This documentation is for Capacitimer v1.0.1
 
 For issues or feature requests, visit the project repository.
