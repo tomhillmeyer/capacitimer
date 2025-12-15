@@ -38,6 +38,18 @@ let currentSettings = {
   showTimeOfDay: true
 };
 
+// Preset state (stored in memory, synced across all clients)
+let customPresets = [
+  { seconds: 60, label: '1:00' },
+  { seconds: 300, label: '5:00' },
+  { seconds: 600, label: '10:00' },
+  { seconds: 1800, label: '30:00' },
+  { seconds: 2700, label: '45:00' },
+  { seconds: 3600, label: '1:00:00' },
+  { seconds: 5400, label: '1:30:00' },
+  { seconds: 7200, label: '2:00:00' }
+];
+
 let timerInterval = null;
 
 // Calculate current time remaining based on endTime
@@ -176,6 +188,21 @@ function startWebServer() {
     res.json({ success: true, settings: currentSettings });
   });
 
+  // Presets endpoints
+  // Get current presets
+  expressApp.get('/api/presets', (req, res) => {
+    res.json(customPresets);
+  });
+
+  // Update presets
+  expressApp.post('/api/presets', (req, res) => {
+    const presets = req.body;
+    customPresets = presets;
+    // Broadcast presets change to all WebSocket clients
+    broadcastPresets(customPresets);
+    res.json({ success: true, presets: customPresets });
+  });
+
   // Try to start server on port 80, incrementing if unavailable
   function tryListen(port) {
     webServer = expressApp.listen(port)
@@ -235,6 +262,12 @@ function startWebServer() {
       data: currentSettings
     }));
 
+    // Send current presets immediately
+    ws.send(JSON.stringify({
+      type: 'presets-update',
+      data: customPresets
+    }));
+
     ws.on('close', () => {
       console.log('WebSocket client disconnected');
     });
@@ -274,6 +307,22 @@ function broadcastSettings(settings) {
   const message = JSON.stringify({
     type: 'settings-update',
     data: settings
+  });
+
+  wss.clients.forEach((client) => {
+    if (client.readyState === 1) { // WebSocket.OPEN
+      client.send(message);
+    }
+  });
+}
+
+// Broadcast preset changes to all WebSocket clients
+function broadcastPresets(presets) {
+  if (!wss) return;
+
+  const message = JSON.stringify({
+    type: 'presets-update',
+    data: presets
   });
 
   wss.clients.forEach((client) => {

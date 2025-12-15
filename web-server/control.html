@@ -29,7 +29,7 @@
         }
 
         .header img {
-            height: 30px;
+            height: 50px;
         }
 
         .header-info {
@@ -348,20 +348,20 @@
             }
 
             /* Add padding to column content */
-            .column > .section {
+            .column>.section {
                 margin: 0 2rem 1rem 2rem;
             }
 
-            .column > .section:first-of-type {
+            .column>.section:first-of-type {
                 margin-top: 0;
             }
 
-            .column > .section:last-child {
+            .column>.section:last-child {
                 margin-bottom: 2rem;
             }
 
             /* Add top padding to left column for first section after header */
-            .column.left-column > .section:first-of-type {
+            .column.left-column>.section:first-of-type {
                 margin-top: 1rem;
             }
 
@@ -378,7 +378,7 @@
                 order: -1;
             }
 
-            .column.right-column > * + * {
+            .column.right-column>*+* {
                 margin-top: 1rem;
             }
         }
@@ -459,9 +459,8 @@
         }
 
         .info-box h3 {
-            font-size: 0.9rem;
+            font-size: .8rem;
             color: #888;
-            margin-bottom: 0.5rem;
         }
 
         .info-box .value {
@@ -506,6 +505,58 @@
             flex-direction: column;
             gap: 1rem;
         }
+
+        .btn-preset-action {
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 0.9rem 0.9rem;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 8px;
+            white-space: nowrap;
+            font-family: 'Jura', system-ui, -apple-system, sans-serif;
+        }
+
+        .btn-preset-action:hover {
+            background: #333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+
+        .btn-preset.time-of-day {
+            background: #EBAC3E;
+            color: #000;
+        }
+
+        .btn-preset.time-of-day:hover {
+            background: #d99b2d;
+            color: #000;
+        }
+
+        .btn-preset.custom-preset {
+            position: relative;
+        }
+
+        .btn-preset.custom-preset.deleting {
+            background: #cc0000;
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(0.95);
+            }
+        }
     </style>
 </head>
 
@@ -514,7 +565,7 @@
         <div class="header-info">
             <img src="/capacitimer-wordmark.png" alt="Capacitimer">
             <div class="header-meta">
-                <div>v1.0.1</div>
+                <div>v1.1.0</div>
                 <div>Created by Tom Hillmeyer</div>
             </div>
         </div>
@@ -531,7 +582,7 @@
                     <div class="header-info">
                         <img src="/capacitimer-wordmark.png" alt="Capacitimer">
                         <div class="header-meta">
-                            <div>v1.0.1</div>
+                            <div>v1.1.0</div>
                             <div>Created by Tom Hillmeyer</div>
                         </div>
                     </div>
@@ -540,18 +591,16 @@
                 </div>
 
                 <div class="section">
-                    <h2>Presets</h2>
-                    <div class="preset-buttons">
-                        <button class="btn-preset" onclick="setTimerPreset('quarterHour')">Next 00:15</button>
-                        <button class="btn-preset" onclick="setTimerPreset('bottomOfHour')">Next 00:30</button>
-                        <button class="btn-preset" onclick="setTimerPreset('threeQuarterHour')">Next 00:45</button>
-                        <button class="btn-preset" onclick="setTimerPreset('topOfHour')">Next 00:00</button>
-                        <button class="btn-preset" onclick="setTimerPreset(60)">1 min</button>
-                        <button class="btn-preset" onclick="setTimerPreset(300)">5 min</button>
-                        <button class="btn-preset" onclick="setTimerPreset(600)">10 min</button>
-                        <button class="btn-preset" onclick="setTimerPreset(1800)">30 min</button>
-                        <button class="btn-preset" onclick="setTimerPreset(3600)">60 min</button>
-                        <button class="btn-preset" onclick="setTimerPreset(5400)">90 min</button>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.9rem;">
+                        <h2 style="margin: 0;">Presets</h2>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn-preset-action" onclick="definePreset()">Define</button>
+                            <button class="btn-preset-action" onclick="resetToDefaultPresets()">Default</button>
+                        </div>
+                    </div>
+                    <div class="preset-buttons" id="presetButtons">
+                        <!-- Preset buttons will be dynamically generated here -->
                     </div>
                 </div>
 
@@ -559,15 +608,15 @@
                     <h2>Custom Time</h2>
                     <div class="custom-time">
                         <input type="text" id="customTime" placeholder="MM:SS or HH:MM:SS" />
-                        <button class="btn-preset" onclick="setCustomTime()">Set Time</button>
+                        <button class="btn-action" onclick="setCustomTime()">Set Time</button>
                     </div>
                 </div>
 
                 <div class="section">
-                    <h2>Count Down to Time</h2>
+                    <h2>Count Down to Time of Day</h2>
                     <div class="custom-time">
                         <input type="text" id="countDownTime" placeholder="e.g., 2:30 PM or 14:30" />
-                        <button class="btn-preset" onclick="setCountDownToTime()">Count Down</button>
+                        <button class="btn-action" onclick="setCountDownToTime()">Count Down</button>
                     </div>
                 </div>
             </div>
@@ -614,10 +663,17 @@
 
                 <!-- Adjustment Grid (2x2) -->
                 <div class="adjustment-grid">
-                    <button class="btn-adjust" onclick="adjustTimer(60)">+1 min</button>
-                    <button class="btn-adjust" onclick="adjustTimer(300)">+5 min</button>
-                    <button class="btn-adjust" onclick="adjustTimer(-60)">-1 min</button>
-                    <button class="btn-adjust" onclick="adjustTimer(-300)">-5 min</button>
+                    <button class="btn-adjust" onclick="adjustTimer(60)"><span style="font-family: monospace;">+1</span>
+                        <span style="font-family: 'Jura', sans-serif;">min</span></button>
+                    <button class="btn-adjust" onclick="adjustTimer(300)"><span
+                            style="font-family: monospace;">+5</span> <span
+                            style="font-family: 'Jura', sans-serif;">min</span></button>
+                    <button class="btn-adjust" onclick="adjustTimer(-60)"><span
+                            style="font-family: monospace;">-1</span> <span
+                            style="font-family: 'Jura', sans-serif;">min</span></button>
+                    <button class="btn-adjust" onclick="adjustTimer(-300)"><span
+                            style="font-family: monospace;">-5</span> <span
+                            style="font-family: 'Jura', sans-serif;">min</span></button>
                 </div>
             </div>
         </div>
@@ -712,10 +768,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div style="margin-top: 1.5rem;">
-                        <p style="font-size: 0.9rem; color: #666;">Note: Settings are stored locally and will apply to
-                            all displays</p>
                     </div>
                 </div>
             </div>
@@ -830,6 +882,14 @@
                         // Update display with new settings
                         if (cachedState) {
                             updateDisplay(cachedState);
+                        }
+                    } else if (message.type === 'presets-update') {
+                        // Update presets from broadcast (only if different)
+                        const newPresets = message.data;
+                        const presetsChanged = JSON.stringify(serverPresets) !== JSON.stringify(newPresets);
+                        if (presetsChanged) {
+                            serverPresets = newPresets;
+                            renderPresetButtons();
                         }
                     }
                 };
@@ -1395,6 +1455,236 @@
 
             // Calculate preview font size on load (after a short delay to ensure layout is ready)
             setTimeout(calculatePreviewFontSize, 100);
+
+            // ===== Custom Preset Management =====
+
+            // Default presets that are always available (1, 5, 10, 30, 45, 60, 90, 120 minutes)
+            const DEFAULT_PRESETS = [
+                { seconds: 60, label: '1:00' },      // 1 minute
+                { seconds: 300, label: '5:00' },     // 5 minutes
+                { seconds: 600, label: '10:00' },    // 10 minutes
+                { seconds: 1800, label: '30:00' },   // 30 minutes
+                { seconds: 2700, label: '45:00' },   // 45 minutes
+                { seconds: 3600, label: '1:00:00' }, // 60 minutes
+                { seconds: 5400, label: '1:30:00' }, // 90 minutes
+                { seconds: 7200, label: '2:00:00' }  // 120 minutes
+            ];
+
+            // Time-of-day presets (never deleted)
+            const TIME_OF_DAY_PRESETS = [
+                { type: 'quarterHour', label: 'Next 00:15' },
+                { type: 'bottomOfHour', label: 'Next 00:30' },
+                { type: 'threeQuarterHour', label: 'Next 00:45' },
+                { type: 'topOfHour', label: 'Next 00:00' }
+            ];
+
+            // Server-side presets (synced across all clients)
+            let serverPresets = DEFAULT_PRESETS;
+            let isRenderingPresets = false;
+
+            // Load custom presets from server
+            async function loadCustomPresets() {
+                try {
+                    const response = await fetch('/api/presets');
+                    const presets = await response.json();
+                    serverPresets = presets;
+                    return presets;
+                } catch (error) {
+                    console.error('Failed to load custom presets:', error);
+                    return serverPresets;
+                }
+            }
+
+            // Save custom presets to server
+            async function saveCustomPresets(presets) {
+                try {
+                    // Deduplicate presets by seconds value
+                    const seen = new Set();
+                    const deduplicated = presets.filter(preset => {
+                        if (seen.has(preset.seconds)) {
+                            return false;
+                        }
+                        seen.add(preset.seconds);
+                        return true;
+                    });
+
+                    serverPresets = deduplicated;
+                    const response = await fetch('/api/presets', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(deduplicated)
+                    });
+                    const data = await response.json();
+                    return data.success;
+                } catch (error) {
+                    console.error('Failed to save custom presets:', error);
+                    return false;
+                }
+            }
+
+            // Format seconds to timecode label (MM:SS or HH:MM:SS)
+            function formatPresetLabel(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+
+                if (hours > 0) {
+                    // HH:MM:SS format
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                } else {
+                    // MM:SS format
+                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+                }
+            }
+
+            // Generate preset buttons
+            async function renderPresetButtons() {
+                // Prevent concurrent renders
+                if (isRenderingPresets) {
+                    return;
+                }
+                isRenderingPresets = true;
+
+                try {
+                    const container = document.getElementById('presetButtons');
+                    container.innerHTML = '';
+
+                    // Add time-of-day presets first (never deletable)
+                    TIME_OF_DAY_PRESETS.forEach(preset => {
+                        const button = document.createElement('button');
+                        button.className = 'btn-preset time-of-day';
+                        button.textContent = preset.label;
+                        button.onclick = () => setTimerPreset(preset.type);
+                        container.appendChild(button);
+                    });
+
+                    const customPresets = await loadCustomPresets();
+
+                    // Add custom time period presets
+                    customPresets.forEach(preset => {
+                        const button = document.createElement('button');
+                        button.className = 'btn-preset custom-preset';
+                        button.textContent = preset.label;
+                        button.onclick = () => setTimerPreset(preset.seconds);
+
+                        // Add long-press delete functionality for touch devices
+                        let pressTimer = null;
+                        let isLongPress = false;
+
+                        button.addEventListener('touchstart', (e) => {
+                            isLongPress = false;
+                            pressTimer = setTimeout(() => {
+                                isLongPress = true;
+                                // Vibrate if available
+                                if (navigator.vibrate) {
+                                    navigator.vibrate(200);
+                                }
+                                if (confirm(`Delete preset "${preset.label}"?`)) {
+                                    deleteCustomPreset(preset.seconds);
+                                }
+                            }, 3000);
+                        }, { passive: true });
+
+                        button.addEventListener('touchend', (e) => {
+                            if (pressTimer) {
+                                clearTimeout(pressTimer);
+                                pressTimer = null;
+                            }
+                            // Prevent click if it was a long press
+                            if (isLongPress) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                isLongPress = false;
+                            }
+                        });
+
+                        button.addEventListener('touchmove', () => {
+                            if (pressTimer) {
+                                clearTimeout(pressTimer);
+                                pressTimer = null;
+                            }
+                        });
+
+                        button.addEventListener('touchcancel', () => {
+                            if (pressTimer) {
+                                clearTimeout(pressTimer);
+                                pressTimer = null;
+                            }
+                        });
+
+                        // Add right-click context menu for desktop
+                        button.addEventListener('contextmenu', (e) => {
+                            e.preventDefault();
+                            if (confirm(`Delete preset "${preset.label}"?`)) {
+                                deleteCustomPreset(preset.seconds);
+                            }
+                        });
+
+                        container.appendChild(button);
+                    });
+                } finally {
+                    isRenderingPresets = false;
+                }
+            }
+
+            // Define a new preset from current timer value
+            async function definePreset() {
+                if (!cachedState) return;
+
+                const currentTime = calculatePreciseTimeRemaining(cachedState);
+                const seconds = Math.ceil(Math.abs(currentTime));
+
+                if (seconds <= 0) {
+                    alert('Timer must have a positive value to create a preset');
+                    return;
+                }
+
+                const customPresets = await loadCustomPresets();
+
+                // Check if this preset already exists
+                const exists = customPresets.some(p => p.seconds === seconds);
+                if (exists) {
+                    alert('A preset for this time already exists');
+                    return;
+                }
+
+                // Add new preset
+                const label = formatPresetLabel(seconds);
+                customPresets.push({ seconds, label });
+
+                // Sort by seconds (ascending)
+                customPresets.sort((a, b) => a.seconds - b.seconds);
+
+                await saveCustomPresets(customPresets);
+            }
+
+            // Delete a custom preset
+            async function deleteCustomPreset(seconds) {
+                const customPresets = await loadCustomPresets();
+                const filtered = customPresets.filter(p => p.seconds !== seconds);
+
+                if (filtered.length === customPresets.length) {
+                    return; // Preset not found
+                }
+
+                await saveCustomPresets(filtered);
+            }
+
+            // Reset to default presets
+            async function resetToDefaultPresets() {
+                if (confirm('Reset to default presets? This will remove all custom presets.')) {
+                    await saveCustomPresets(DEFAULT_PRESETS);
+                }
+            }
+
+            // Clean up old localStorage preset data (migration from v1.0)
+            if (localStorage.getItem('customPresets')) {
+                console.log('Removing old localStorage preset data...');
+                localStorage.removeItem('customPresets');
+            }
+
+            // Initialize preset buttons on load
+            renderPresetButtons();
         </script>
 </body>
 
