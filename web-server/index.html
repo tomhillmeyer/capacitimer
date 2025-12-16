@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Capacitimer</title>
     <style>
+        @font-face {
+            font-family: 'Jura';
+            src: url('/Jura-VariableFont_wght.ttf') format('truetype');
+            font-weight: 100 900;
+            font-style: normal;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,7 +20,7 @@
         }
 
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: 'Jura', system-ui, -apple-system, sans-serif;
             background: #1a1a1a;
             color: #fff;
             padding: 2rem;
@@ -22,6 +29,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            text-transform: uppercase;
         }
 
         .container {

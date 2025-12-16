@@ -113,6 +113,7 @@ button {
     transition: all 0.2s;
     border-radius: 5px;
     font-family: 'Jura', system-ui, -apple-system, sans-serif;
+    text-transform: uppercase;
 }
 
 button:hover {

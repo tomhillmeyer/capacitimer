@@ -227,6 +227,10 @@
             min-width: 80px;
         }
 
+        .color-threshold-item span {
+            flex: 1;
+        }
+
         /* Connection Lost Overlay */
         .connection-overlay {
             display: none;
@@ -750,11 +754,10 @@
                         <!-- Right Column: Timer Colors -->
                         <div class="settings-section right-section">
                             <div class="settings-group">
-                                <h3>Timer Color Thresholds</h3>
+                                <h3>Timer Colors</h3>
                                 <div class="color-threshold-item">
                                     <input type="color" id="colorNormal" value="#44ff44">
-                                    <span>at</span>
-                                    <input type="text" id="thresholdNormal" placeholder="HH:MM:SS">
+                                    <span>Default Color</span>
                                 </div>
                                 <div class="color-threshold-item">
                                     <input type="color" id="colorWarning" value="#ffaa00">
@@ -1346,8 +1349,7 @@
                 document.getElementById('colorWarning').value = settings.colorWarning;
                 document.getElementById('colorCritical').value = settings.colorCritical;
 
-                // Load threshold values as time strings
-                document.getElementById('thresholdNormal').value = settingsManager.secondsToTimeString(settings.thresholdNormal);
+                // Load threshold values as time strings (skip thresholdNormal as it's just the default color)
                 document.getElementById('thresholdWarning').value = settingsManager.secondsToTimeString(settings.thresholdWarning);
                 document.getElementById('thresholdCritical').value = settingsManager.secondsToTimeString(settings.thresholdCritical);
             }
@@ -1383,8 +1385,8 @@
                     });
                 });
 
-                // Add threshold time input listeners
-                ['thresholdNormal', 'thresholdWarning', 'thresholdCritical'].forEach(id => {
+                // Add threshold time input listeners (only for warning and critical)
+                ['thresholdWarning', 'thresholdCritical'].forEach(id => {
                     const input = document.getElementById(id);
 
                     input.addEventListener('blur', (e) => {
@@ -1508,13 +1510,14 @@
                         return true;
                     });
 
-                    serverPresets = deduplicated;
                     const response = await fetch('/api/presets', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(deduplicated)
                     });
                     const data = await response.json();
+
+                    // Server will broadcast the update via WebSocket, which will trigger re-render
                     return data.success;
                 } catch (error) {
                     console.error('Failed to save custom presets:', error);

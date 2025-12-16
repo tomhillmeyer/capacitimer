@@ -438,51 +438,7 @@ Capacitimer publishes an mDNS/Bonjour service for easy discovery on local networ
 
 You can access the application at `http://capacitimer.local` (plus port if not 80) on supported networks.
 
----
-
-## Notes
-
-### Timer Precision
-- Timer state is calculated server-side using absolute timestamps
-- Updates are broadcast every 100ms for smooth display
-- Millisecond precision is maintained when pausing/resuming
-- Use `serverTime` field to compensate for network latency if needed
-
-### Count Up Mode
-When `countUpAfterZero` setting is enabled:
-- Timer continues running past zero
-- `timeRemaining` becomes negative
-- Display background changes to red (#cc0000)
-- Text color changes to white
 
 ### Port Auto-Discovery
 The web server attempts to start on port 80 but will automatically increment if that port is unavailable or requires elevated privileges. Check console output for the actual port being used.
 
-### CORS
-The REST API does not currently implement CORS headers. If accessing from a web application on a different origin, you may need to run Capacitimer with CORS support or use a proxy.
-
----
-
-## Troubleshooting
-
-**Connection Refused**
-- Ensure Capacitimer is running
-- Check console output for the actual port being used
-- Try `http://localhost:80`, `http://localhost:81`, etc.
-
-**WebSocket Connection Fails**
-- WebSocket server always runs on port 3001
-- Ensure no firewall is blocking the port
-- Check that another application isn't using port 3001
-
-**mDNS Not Resolving**
-- Ensure Bonjour/mDNS is supported on your network
-- Try direct IP address instead of `capacitimer.local`
-- Check that multicast DNS is not blocked by firewall
-
----
-
-## Version
-This documentation is for Capacitimer v1.0.1
-
-For issues or feature requests, visit the project repository.

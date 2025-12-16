@@ -268,7 +268,7 @@ function App() {
   };
 
   const getTimerColor = (seconds: number): string => {
-    // Sort thresholds in ascending order
+    // Sort thresholds in ascending order (lowest to highest)
     const thresholds = [
       { time: settings.thresholdCritical, color: settings.colorCritical },
       { time: settings.thresholdWarning, color: settings.colorWarning },
@@ -276,14 +276,15 @@ function App() {
     ].sort((a, b) => a.time - b.time);
 
     // Find the appropriate color based on time remaining
-    for (let i = thresholds.length - 1; i >= 0; i--) {
-      if (seconds >= thresholds[i].time) {
+    // Check thresholds from lowest to highest
+    for (let i = 0; i < thresholds.length; i++) {
+      if (seconds <= thresholds[i].time) {
         return thresholds[i].color;
       }
     }
 
-    // Default to the lowest threshold color
-    return thresholds[0].color;
+    // If time is above all thresholds, use the normal (default) color
+    return settings.colorNormal;
   };
 
   const formatTimeOfDay = (date: Date): string => {
