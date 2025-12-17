@@ -57,11 +57,14 @@ if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
     exit 1
 fi
 
+# Strip 'v' prefix from version if present
+VERSION_NUMBER="${VERSION#v}"
+
 echo "Latest version: $VERSION"
 echo ""
 
 # Construct expected filenames
-DEB_FILENAME="Capacitimer-${VERSION}-linux-${DEB_ARCH}.deb"
+DEB_FILENAME="Capacitimer-${VERSION_NUMBER}-linux-${DEB_ARCH}.deb"
 INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/$REPO/$VERSION/$INSTALL_SCRIPT"
 
 # Find download URL for the .deb file
