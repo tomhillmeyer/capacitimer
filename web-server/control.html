@@ -339,7 +339,7 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 2rem 2rem 1rem 2rem;
+                padding: 1rem 2rem 1rem 2rem;
                 position: sticky;
                 top: 0;
                 background: #1a1a1a;
@@ -348,7 +348,7 @@
             }
 
             .column.left-column .column-header img {
-                height: 30px;
+                height: 40px;
             }
 
             /* Add padding to column content */
@@ -561,6 +561,53 @@
                 transform: scale(0.95);
             }
         }
+
+        /* Prevent text selection on preset buttons */
+        .btn-preset {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Edit mode styles */
+        .preset-buttons.edit-mode .btn-preset.custom-preset {
+            padding-right: 3rem;
+            position: relative;
+            background: #666 !important;
+            opacity: 0.8;
+        }
+
+        .preset-delete-btn {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .preset-delete-btn:hover {
+            background: #cc0000;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .btn-preset-action.edit-active {
+            background: #4488ff;
+            color: white;
+        }
     </style>
 </head>
 
@@ -599,6 +646,7 @@
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.9rem;">
                         <h2 style="margin: 0;">Presets</h2>
                         <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn-preset-action" id="editModeBtn" onclick="toggleEditMode()">Edit</button>
                             <button class="btn-preset-action" onclick="definePreset()">Define</button>
                             <button class="btn-preset-action" onclick="resetToDefaultPresets()">Default</button>
                         </div>
@@ -1483,6 +1531,7 @@
             // Server-side presets (synced across all clients)
             let serverPresets = DEFAULT_PRESETS;
             let isRenderingPresets = false;
+            let isEditMode = false;
 
             // Load custom presets from server
             async function loadCustomPresets() {
@@ -1540,6 +1589,26 @@
                 }
             }
 
+            // Toggle edit mode
+            function toggleEditMode() {
+                isEditMode = !isEditMode;
+                const container = document.getElementById('presetButtons');
+                const editBtn = document.getElementById('editModeBtn');
+
+                if (isEditMode) {
+                    container.classList.add('edit-mode');
+                    editBtn.classList.add('edit-active');
+                    editBtn.textContent = 'Done';
+                } else {
+                    container.classList.remove('edit-mode');
+                    editBtn.classList.remove('edit-active');
+                    editBtn.textContent = 'Edit';
+                }
+
+                // Re-render buttons to show/hide delete buttons
+                renderPresetButtons();
+            }
+
             // Generate preset buttons
             async function renderPresetButtons() {
                 // Prevent concurrent renders
@@ -1552,12 +1621,21 @@
                     const container = document.getElementById('presetButtons');
                     container.innerHTML = '';
 
+                    // Preserve edit mode class if active
+                    if (isEditMode) {
+                        container.classList.add('edit-mode');
+                    }
+
                     // Add time-of-day presets first (never deletable)
                     TIME_OF_DAY_PRESETS.forEach(preset => {
                         const button = document.createElement('button');
                         button.className = 'btn-preset time-of-day';
                         button.textContent = preset.label;
-                        button.onclick = () => setTimerPreset(preset.type);
+                        button.onclick = () => {
+                            if (!isEditMode) {
+                                setTimerPreset(preset.type);
+                            }
+                        };
                         container.appendChild(button);
                     });
 
@@ -1568,60 +1646,25 @@
                         const button = document.createElement('button');
                         button.className = 'btn-preset custom-preset';
                         button.textContent = preset.label;
-                        button.onclick = () => setTimerPreset(preset.seconds);
+                        button.onclick = () => {
+                            if (!isEditMode) {
+                                setTimerPreset(preset.seconds);
+                            }
+                        };
 
-                        // Add long-press delete functionality for touch devices
-                        let pressTimer = null;
-                        let isLongPress = false;
-
-                        button.addEventListener('touchstart', (e) => {
-                            isLongPress = false;
-                            pressTimer = setTimeout(() => {
-                                isLongPress = true;
-                                // Vibrate if available
-                                if (navigator.vibrate) {
-                                    navigator.vibrate(200);
-                                }
+                        // Add delete button if in edit mode
+                        if (isEditMode) {
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'preset-delete-btn';
+                            deleteBtn.innerHTML = '&times;';
+                            deleteBtn.onclick = (e) => {
+                                e.stopPropagation();
                                 if (confirm(`Delete preset "${preset.label}"?`)) {
                                     deleteCustomPreset(preset.seconds);
                                 }
-                            }, 3000);
-                        }, { passive: true });
-
-                        button.addEventListener('touchend', (e) => {
-                            if (pressTimer) {
-                                clearTimeout(pressTimer);
-                                pressTimer = null;
-                            }
-                            // Prevent click if it was a long press
-                            if (isLongPress) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                isLongPress = false;
-                            }
-                        });
-
-                        button.addEventListener('touchmove', () => {
-                            if (pressTimer) {
-                                clearTimeout(pressTimer);
-                                pressTimer = null;
-                            }
-                        });
-
-                        button.addEventListener('touchcancel', () => {
-                            if (pressTimer) {
-                                clearTimeout(pressTimer);
-                                pressTimer = null;
-                            }
-                        });
-
-                        // Add right-click context menu for desktop
-                        button.addEventListener('contextmenu', (e) => {
-                            e.preventDefault();
-                            if (confirm(`Delete preset "${preset.label}"?`)) {
-                                deleteCustomPreset(preset.seconds);
-                            }
-                        });
+                            };
+                            button.appendChild(deleteBtn);
+                        }
 
                         container.appendChild(button);
                     });
@@ -1658,7 +1701,13 @@
                 // Sort by seconds (ascending)
                 customPresets.sort((a, b) => a.seconds - b.seconds);
 
-                await saveCustomPresets(customPresets);
+                const success = await saveCustomPresets(customPresets);
+
+                // Immediately update UI even if server broadcast hasn't arrived yet
+                if (success) {
+                    serverPresets = customPresets;
+                    await renderPresetButtons();
+                }
             }
 
             // Delete a custom preset
@@ -1670,13 +1719,25 @@
                     return; // Preset not found
                 }
 
-                await saveCustomPresets(filtered);
+                const success = await saveCustomPresets(filtered);
+
+                // Immediately update UI even if server broadcast hasn't arrived yet
+                if (success) {
+                    serverPresets = filtered;
+                    await renderPresetButtons();
+                }
             }
 
             // Reset to default presets
             async function resetToDefaultPresets() {
                 if (confirm('Reset to default presets? This will remove all custom presets.')) {
-                    await saveCustomPresets(DEFAULT_PRESETS);
+                    const success = await saveCustomPresets(DEFAULT_PRESETS);
+
+                    // Immediately update UI even if server broadcast hasn't arrived yet
+                    if (success) {
+                        serverPresets = DEFAULT_PRESETS;
+                        await renderPresetButtons();
+                    }
                 }
             }
 

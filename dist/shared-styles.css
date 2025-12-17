@@ -1,6 +1,13 @@
 /* Capacitimer Shared Styles */
 /* Used across all views: Electron app, display page, and control page */
 
+@font-face {
+    font-family: 'Jura';
+    src: url('/Jura-VariableFont_wght.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -10,9 +17,10 @@
 body {
     margin: 0;
     padding: 0;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: 'Jura', system-ui, -apple-system, sans-serif;
     background: #1a1a1a;
     color: #fff;
+    text-transform: uppercase;
 }
 
 /* Timer Display Styles */
@@ -63,6 +71,10 @@ h1 {
     font-size: 2.5rem;
 }
 
+h2 {
+    text-transform: uppercase;
+}
+
 .timer-display.control {
     background: #000;
     border-radius: 8px;
@@ -100,6 +112,8 @@ button {
     cursor: pointer;
     transition: all 0.2s;
     border-radius: 5px;
+    font-family: 'Jura', system-ui, -apple-system, sans-serif;
+    text-transform: uppercase;
 }
 
 button:hover {
@@ -130,7 +144,20 @@ button:active {
 .btn-preset {
     background: #BF4E34;
     color: #fff;
+    height: 70px;
+    font-family: monospace;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-action {
+    background: #BF4E34;
+    color: #fff;
     height: 58px;
+    font-family: 'Jura', system-ui, -apple-system, sans-serif;
+    padding: 0.75rem 1rem;
 }
 
 .btn-adjust {
@@ -143,7 +170,7 @@ button:active {
 
 .preset-buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
 }
 
@@ -165,7 +192,7 @@ input[type="text"] {
 
 .section {
     background: #2a2a2a;
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
 }
