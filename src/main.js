@@ -1,9 +1,11 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, screen, shell } from 'electron';
 import express from 'express';
 import { WebSocketServer } from 'ws';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Bonjour } from 'bonjour-service';
+import { networkInterfaces } from 'os';
+import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -11,7 +13,13 @@ let mainWindow = null;
 let webServer = null;
 let wss = null;
 let bonjourService = null;
+let tray = null;
+let currentFullscreenDisplay = null;
+let webServerPort = null;
 const WS_PORT = 3001;
+
+// Path to store display preferences
+const prefsPath = path.join(app.getPath('userData'), 'display-prefs.json');
 
 // Timer state
 let timerState = {
@@ -75,6 +83,30 @@ function calculateTimeRemainingPrecise() {
   return remainingMs / 1000; // Return fractional seconds
 }
 
+function loadDisplayPrefs() {
+  try {
+    if (fs.existsSync(prefsPath)) {
+      const data = fs.readFileSync(prefsPath, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error('Error loading display preferences:', err);
+  }
+  return null;
+}
+
+function saveDisplayPrefs() {
+  try {
+    const prefs = {
+      displayId: currentFullscreenDisplay,
+      isFullscreen: mainWindow ? mainWindow.isFullScreen() : false
+    };
+    fs.writeFileSync(prefsPath, JSON.stringify(prefs, null, 2));
+  } catch (err) {
+    console.error('Error saving display preferences:', err);
+  }
+}
+
 function createWindow() {
   // Check for --fullscreen flag in command line args
   const isFullscreen = process.argv.includes('--fullscreen');
@@ -104,6 +136,8 @@ function createWindow() {
 
   mainWindow.on('leave-full-screen', () => {
     mainWindow.setMenuBarVisibility(false);
+    currentFullscreenDisplay = null;
+    saveDisplayPrefs();
   });
 
   // In development, load from vite dev server
@@ -114,9 +148,166 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
+  // Restore previous display settings after window is ready
+  mainWindow.webContents.on('did-finish-load', () => {
+    const prefs = loadDisplayPrefs();
+    if (prefs && prefs.isFullscreen && prefs.displayId) {
+      const displays = screen.getAllDisplays();
+      const targetDisplay = displays.find(d => d.id === prefs.displayId);
+
+      if (targetDisplay) {
+        const bounds = targetDisplay.bounds;
+        mainWindow.setBounds(bounds);
+        mainWindow.setFullScreen(true);
+        currentFullscreenDisplay = prefs.displayId;
+        updateTrayMenu();
+      }
+    }
+  });
+
+  // Handle escape key to exit fullscreen
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'Escape' && mainWindow.isFullScreen()) {
+      mainWindow.setFullScreen(false);
+      currentFullscreenDisplay = null;
+      saveDisplayPrefs();
+    }
+  });
+
   mainWindow.on('closed', () => {
+    saveDisplayPrefs();
     mainWindow = null;
   });
+}
+
+function createTray() {
+  // Select icon based on platform
+  let iconPath;
+  if (process.platform === 'darwin') {
+    // Use Template icon for macOS (black/white adaptive)
+    iconPath = path.join(__dirname, '../assets/capacitimer-black.png');
+  } else if (process.platform === 'win32') {
+    // Use color icon for Windows
+    iconPath = path.join(__dirname, '../assets/capacitimer-color.png');
+  } else {
+    // Use color icon for Linux
+    iconPath = path.join(__dirname, '../assets/capacitimer-color.png');
+  }
+
+  const icon = nativeImage.createFromPath(iconPath);
+
+  // Resize for tray icon (16x16 for macOS, 20x20 for others)
+  const resizedIcon = process.platform === 'darwin'
+    ? icon.resize({ width: 16, height: 16 })
+    : icon.resize({ width: 20, height: 20 });
+
+  // Mark as template on macOS for automatic color adaptation
+  if (process.platform === 'darwin') {
+    resizedIcon.setTemplateImage(true);
+  }
+
+  tray = new Tray(resizedIcon);
+  tray.setToolTip('Capacitimer');
+
+  updateTrayMenu();
+
+  tray.on('click', () => {
+    updateTrayMenu();
+  });
+}
+
+function getNetworkAddresses() {
+  const addresses = [];
+  const nets = networkInterfaces();
+
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      // Skip internal and non-IPv4 addresses
+      if (net.family === 'IPv4' && !net.internal) {
+        addresses.push(net.address);
+      }
+    }
+  }
+
+  return addresses;
+}
+
+function updateTrayMenu() {
+  const displays = screen.getAllDisplays();
+
+  const menuItems = [];
+
+  // Add display items
+  displays.forEach((display, index) => {
+    const isCurrentDisplay = currentFullscreenDisplay === display.id;
+    menuItems.push({
+      label: `Display ${index + 1}${display.label ? ` (${display.label})` : ''} - ${display.size.width}x${display.size.height}`,
+      type: 'checkbox',
+      checked: isCurrentDisplay,
+      click: () => {
+        if (isCurrentDisplay) {
+          // Exit fullscreen
+          mainWindow.setFullScreen(false);
+          currentFullscreenDisplay = null;
+        } else {
+          // Enter fullscreen on selected display
+          const bounds = display.bounds;
+          mainWindow.setBounds(bounds);
+          mainWindow.setFullScreen(true);
+          currentFullscreenDisplay = display.id;
+        }
+        saveDisplayPrefs();
+        updateTrayMenu();
+      }
+    });
+  });
+
+  // Add separator before web links
+  if (webServerPort) {
+    menuItems.push({ type: 'separator' });
+
+    const portSuffix = webServerPort === 80 ? '' : `:${webServerPort}`;
+
+    // Add Control and Display links
+    menuItems.push({
+      label: 'Control',
+      click: () => {
+        shell.openExternal(`http://capacitimer.local${portSuffix}/control`);
+      }
+    });
+
+    menuItems.push({
+      label: 'Display',
+      click: () => {
+        shell.openExternal(`http://capacitimer.local${portSuffix}/display`);
+      }
+    });
+
+    // Add separator before IP addresses
+    menuItems.push({ type: 'separator' });
+
+    // Add all network IP addresses (disabled/grayed out)
+    const addresses = getNetworkAddresses();
+    addresses.forEach(address => {
+      menuItems.push({
+        label: `${address}${portSuffix}`,
+        enabled: false
+      });
+    });
+  }
+
+  // Add separator before quit
+  menuItems.push({ type: 'separator' });
+  menuItems.push({
+    label: 'Quit',
+    click: () => {
+      app.quit();
+    }
+  });
+
+  const contextMenu = Menu.buildFromTemplate(menuItems);
+
+  tray.setContextMenu(contextMenu);
 }
 
 function startWebServer() {
@@ -207,6 +398,7 @@ function startWebServer() {
   function tryListen(port) {
     webServer = expressApp.listen(port)
       .on('listening', () => {
+        webServerPort = port;
         console.log(`Web server running on http://localhost:${port}`);
         console.log(`Control page: http://localhost:${port}/control`);
         console.log(`Display page: http://localhost:${port}/display`);
@@ -224,6 +416,11 @@ function startWebServer() {
         });
 
         console.log(`mDNS service published - accessible at http://capacitimer.local${port === 80 ? '' : ':' + port}`);
+
+        // Update tray menu with network addresses
+        if (tray) {
+          updateTrayMenu();
+        }
       })
       .on('error', (err) => {
         if (err.code === 'EACCES') {
@@ -545,6 +742,7 @@ app.whenReady().then(() => {
 
   setupIpcHandlers();
   createWindow();
+  createTray();
   startWebServer();
 
   app.on('activate', () => {
