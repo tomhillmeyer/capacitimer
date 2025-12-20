@@ -27,8 +27,10 @@ You can also access these pages at `capacitimer.local` which is especially helpf
 
 You control and adjust the timer at `capacitimer.local/control` or `YOUR_IP_ADDRESS/control`
 
-![Control](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control-annotated.png?raw=true)
-![Control](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/capacitimer-settings.png?raw=true)
+![Control Left](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control-annotated-left.png?raw=true)
+![Control Right](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control-annotated-right.png?raw=true)
+![Settings Left](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/capacitimer-settings-left.png?raw=true)
+![Settings Right](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/capacitimer-settings-right.png?raw=true)
 
 ## Workflow
 
