@@ -247,6 +247,7 @@
 
         .color-threshold-item span {
             flex: 1;
+            text-align: center;
         }
 
         .slider-item {
@@ -262,9 +263,10 @@
         }
 
         .slider-item label {
-            font-size: 0.9rem;
+            font-size: 1rem;
             color: #aaa;
             display: block;
+            margin-bottom: 10px;
         }
 
         /* Connection Lost Overlay */
@@ -880,7 +882,7 @@
                                 <h3>TIMER</h3>
                                 <div class="color-threshold-item">
                                     <input type="color" id="colorNormal" value="#44ff44">
-                                    <span>Default Color</span>
+                                    <span style="flex: 0;">Default Color</span>
                                 </div>
                                 <div class="color-threshold-item">
                                     <input type="color" id="colorWarning" value="#ffaa00">
@@ -895,7 +897,7 @@
                                 <div class="toggle-item">
                                     <span>Font</span>
                                     <select id="timerFont"
-                                        style="background: #2a2a2a; color: #fff; border: 1px solid #444; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+                                        style="background: #2a2a2a; color: #fff; border: 1px solid #444; padding: 0.5rem; border-radius: 4px; cursor: pointer; font-size: 1rem;">
                                         <option value="monospace">System Monospace</option>
                                         <option value="'Roboto Mono', monospace">Roboto Mono</option>
                                         <option value="'Kode Mono', monospace">Kode Mono</option>
@@ -918,9 +920,9 @@
                                     <input type="range" id="timeOfDayFontSize" min="0" max="100" value="100"
                                         style="cursor: pointer;">
                                 </div>
-                                <div class="color-threshold-item">
+                                <div class="color-threshold-item" style="justify-content: flex-start;">
                                     <input type="color" id="timeOfDayColor" value="#ffffff">
-                                    <span>Color</span>
+                                    <span style="text-align: left; flex:0;">Color</span>
                                 </div>
                             </div>
                         </div>
