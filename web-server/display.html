@@ -351,27 +351,39 @@
 
             let timeRemaining = calculateTimeRemaining(state);
 
-            timerValue.textContent = formatTime(timeRemaining);
+            // Check visibility settings
+            const showTimer = settings.showTimer !== false;
+            const showTimeOfDay = settings.showTimeOfDay !== false;
 
-            // Apply timer styling
-            timerValue.style.fontFamily = settings.timerFont || 'monospace';
-            const baseFontSize = fontSize * (settings.timerFontSize || 100) / 100;
-            timerValue.style.fontSize = `${baseFontSize}vw`;
+            // Handle timer visibility
+            if (showTimer) {
+                timerValue.textContent = formatTime(timeRemaining);
+                timerValue.style.display = 'block';
 
-            // Set red background and white text when counting up past zero
-            if (timeRemaining < 0) {
-                if (timerDisplay) timerDisplay.style.backgroundColor = '#cc0000';
-                document.body.style.backgroundColor = '#cc0000';
-                timerValue.style.color = '#ffffff';
+                // Apply timer styling
+                timerValue.style.fontFamily = settings.timerFont || 'monospace';
+                const baseFontSize = fontSize * (settings.timerFontSize || 100) / 100;
+                timerValue.style.fontSize = `${baseFontSize}vw`;
+
+                // Set red background and white text when counting up past zero
+                if (timeRemaining < 0) {
+                    if (timerDisplay) timerDisplay.style.backgroundColor = '#cc0000';
+                    document.body.style.backgroundColor = '#cc0000';
+                    timerValue.style.color = '#ffffff';
+                } else {
+                    if (timerDisplay) timerDisplay.style.backgroundColor = '#000000';
+                    document.body.style.backgroundColor = '#000000';
+                    timerValue.style.color = getTimerColor(Math.abs(timeRemaining));
+                }
             } else {
+                timerValue.style.display = 'none';
                 if (timerDisplay) timerDisplay.style.backgroundColor = '#000000';
                 document.body.style.backgroundColor = '#000000';
-                timerValue.style.color = getTimerColor(Math.abs(timeRemaining));
             }
 
             // Show time of day
             const timeOfDay = formatTimeOfDay();
-            if (timeOfDay) {
+            if (showTimeOfDay && timeOfDay) {
                 timerStatus.textContent = timeOfDay;
                 timerStatus.style.display = 'block';
                 // Apply time of day styling

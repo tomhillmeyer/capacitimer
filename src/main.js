@@ -47,6 +47,7 @@ let currentSettings = {
   thresholdWarning: 60,  // 1:00
   thresholdCritical: 0,  // 0:00
   countUpAfterZero: false,
+  showTimer: true,
   showTimeOfDay: true,
   timerFont: 'monospace',
   timerFontSize: 100,  // percentage (0-100)
@@ -565,6 +566,9 @@ function startTimer() {
   const currentTimeRemaining = calculateTimeRemaining();
   if (currentTimeRemaining <= 0) return;
 
+  // When starting, lock in the reset time to whatever is currently showing
+  timerState.initialTimeRemaining = Math.ceil(currentTimeRemaining);
+
   timerState.isRunning = true;
   timerState.isPaused = false;
   timerState.startTime = Date.now(); // Record when the timer started
@@ -639,9 +643,9 @@ function resetTimer() {
     timerInterval = null;
   }
 
-  // Reset to last set time
-  timerState.timeRemaining = timerState.lastSetTime;
-  timerState.pausedTimeRemaining = timerState.lastSetTime;
+  // Reset to initialTimeRemaining (the time showing when start was pressed)
+  timerState.timeRemaining = timerState.initialTimeRemaining;
+  timerState.pausedTimeRemaining = timerState.initialTimeRemaining;
   broadcastTimerUpdate();
 
   // If it was running (not paused), restart it
@@ -716,11 +720,15 @@ function adjustTimer(seconds) {
   const newTimeRemaining = Math.max(0, currentTimeRemaining + seconds);
 
   if (timerState.isRunning) {
-    // Adjust the end time
+    // Adjust the end time while running
     timerState.endTime = Date.now() + (newTimeRemaining * 1000);
+    // Also adjust initialTimeRemaining so reset goes to the new adjusted time
+    timerState.initialTimeRemaining = Math.ceil(newTimeRemaining);
   } else {
+    // When stopped, update the time and initialTimeRemaining
     timerState.pausedTimeRemaining = newTimeRemaining;
     timerState.timeRemaining = newTimeRemaining;
+    timerState.initialTimeRemaining = Math.ceil(newTimeRemaining);
   }
 
   broadcastTimerUpdate();

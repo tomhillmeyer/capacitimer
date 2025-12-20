@@ -298,10 +298,61 @@ input[type="checkbox"] {
 
 input[type="color"] {
     cursor: pointer;
-    border: none;
+    border: 2px solid #444;
     padding: 0;
     width: 50px;
-    height: 30px;
+    height: 50px;
+    border-radius: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+    border-radius: 6px;
+}
+
+input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 6px;
+}
+
+input[type="color"]::-moz-color-swatch {
+    border: none;
+    border-radius: 6px;
+}
+
+/* Range slider styling for bigger handles */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
+    background: #444;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #4488ff;
+    cursor: pointer;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #4488ff;
+    cursor: pointer;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 

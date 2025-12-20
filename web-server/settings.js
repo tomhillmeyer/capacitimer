@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
     thresholdWarning: 60,  // 1:00
     thresholdCritical: 0,  // 0:00
     countUpAfterZero: false,
+    showTimer: true,
     showTimeOfDay: true,
     timerFont: 'monospace',
     timerFontSize: 100,  // percentage (0-100)

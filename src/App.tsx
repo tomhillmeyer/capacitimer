@@ -14,6 +14,7 @@ interface Settings {
   thresholdWarning: number;
   thresholdCritical: number;
   countUpAfterZero: boolean;
+  showTimer: boolean;
   showTimeOfDay: boolean;
   timerFont: string;
   timerFontSize: number;
@@ -33,6 +34,7 @@ const DEFAULT_SETTINGS: Settings = {
   thresholdWarning: 60,  // 1:00
   thresholdCritical: 0,  // 0:00
   countUpAfterZero: false,
+  showTimer: true,
   showTimeOfDay: true,
   timerFont: 'monospace',
   timerFontSize: 100,
@@ -425,17 +427,19 @@ function App() {
         </div>
       )}
       <div className="timer-display">
-        <div
-          ref={timerValueRef}
-          className="timer-value"
-          style={{
-            color: getDisplayColor(),
-            fontSize: `${fontSize * (settings.timerFontSize / 100)}vw`,
-            fontFamily: settings.timerFont || 'monospace'
-          }}
-        >
-          {formatTime(displayTime)}
-        </div>
+        {settings.showTimer && (
+          <div
+            ref={timerValueRef}
+            className="timer-value"
+            style={{
+              color: getDisplayColor(),
+              fontSize: `${fontSize * (settings.timerFontSize / 100)}vw`,
+              fontFamily: settings.timerFont || 'monospace'
+            }}
+          >
+            {formatTime(displayTime)}
+          </div>
+        )}
         {settings.showTimeOfDay && (
           <div
             ref={timeOfDayRef}
