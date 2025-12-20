@@ -1,1 +1,370 @@
-../web-server/shared-styles.css
+/* Capacitimer Shared Styles */
+/* Used across all views: Electron app, display page, and control page */
+
+/* Jura font family - using static fonts for better iOS compatibility */
+@font-face {
+    font-family: 'Jura';
+    src: url('./fonts/Jura/Jura-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Jura';
+    src: url('./fonts/Jura/Jura-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Jura';
+    src: url('./fonts/Jura/Jura-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Jura';
+    src: url('./fonts/Jura/Jura-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Jura';
+    src: url('./fonts/Jura/Jura-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* Monospace fonts for timer display */
+@font-face {
+    font-family: 'Roboto Mono';
+    src: url('./fonts/Roboto_Mono/RobotoMono-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Kode Mono';
+    src: url('./fonts/Kode_Mono/KodeMono-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'PT Mono';
+    src: url('./fonts/PT_Mono/PTMono-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Share Tech Mono';
+    src: url('./fonts/Share_Tech_Mono/ShareTechMono-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Courier Prime';
+    src: url('./fonts/Courier_Prime/CourierPrime-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Jura', system-ui, -apple-system, sans-serif;
+    background: #1a1a1a;
+    color: #fff;
+    text-transform: uppercase;
+}
+
+/* Timer Display Styles */
+.timer-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+.timer-value {
+    font-weight: bold;
+    font-family: monospace;
+    line-height: 1;
+    margin: 0;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+}
+
+.timer-status {
+    font-size: 4vw;
+    font-weight: bold;
+    margin-top: 2rem;
+    color: #ffffff;
+    letter-spacing: 0.2em;
+}
+
+/* Full-screen display page styles */
+body.fullscreen-display {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Control Page Styles */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2.5rem;
+}
+
+h2 {
+    text-transform: uppercase;
+}
+
+.timer-display.control {
+    background: #000;
+    border-radius: 8px;
+    padding: 3rem;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.timer-display.control .timer-value {
+    font-size: 4rem;
+}
+
+.timer-display.control .timer-status {
+    font-size: 1.5rem;
+    margin-top: 1rem;
+}
+
+.controls {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.button-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+button {
+    flex: 1;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 5px;
+    font-family: 'Jura', system-ui, -apple-system, sans-serif;
+    text-transform: uppercase;
+}
+
+button:hover {
+    opacity: .8;
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+.btn-start {
+    background: #44ff44;
+    color: #000;
+    min-height: 140px;
+}
+
+.btn-pause {
+    background: #ffaa00;
+    color: #000;
+    min-height: 140px;
+}
+
+.btn-reset {
+    background: #ff4444;
+    color: #fff;
+}
+
+.btn-preset {
+    background: #BF4E34;
+    color: #fff;
+    height: 70px;
+    font-family: monospace;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-action {
+    background: #BF4E34;
+    color: #fff;
+    height: 58px;
+    font-family: 'Jura', system-ui, -apple-system, sans-serif;
+    padding: 0.75rem 1rem;
+}
+
+.btn-adjust {
+    background: #888;
+    color: #fff;
+    flex: 0 1 auto;
+    min-width: 80px;
+    min-height: 58px;
+}
+
+.preset-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.custom-time {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+input[type="text"] {
+    flex: 1;
+    padding: 1rem;
+    font-size: 1.2rem;
+    border: 2px solid #444;
+    border-radius: 8px;
+    background: #2a2a2a;
+    color: #fff;
+}
+
+.section {
+    background: #2a2a2a;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.section h2 {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: #C58F3A;
+}
+
+.section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #aaa;
+}
+
+/* Settings styles */
+label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    cursor: pointer;
+}
+
+input[type="color"] {
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    width: 50px;
+    height: 30px;
+}
+
+
+
+/* The switch - the box around the slider */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* The slider */
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+input:checked+.slider {
+    background-color: #2196F3;
+}
+
+input:focus+.slider {
+    box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked+.slider:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}

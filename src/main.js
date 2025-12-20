@@ -20,6 +20,7 @@ const WS_PORT = 3001;
 
 // Path to store display preferences
 const prefsPath = path.join(app.getPath('userData'), 'display-prefs.json');
+const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 
 // Timer state
 let timerState = {
@@ -42,8 +43,15 @@ let currentSettings = {
   colorNormal: '#44ff44',
   colorWarning: '#ffaa00',
   colorCritical: '#ff4444',
+  thresholdNormal: 300,  // 5:00
+  thresholdWarning: 60,  // 1:00
+  thresholdCritical: 0,  // 0:00
   countUpAfterZero: false,
-  showTimeOfDay: true
+  showTimeOfDay: true,
+  timerFont: 'monospace',
+  timerFontSize: 100,  // percentage (0-100)
+  timeOfDayFontSize: 100,  // percentage (0-100)
+  timeOfDayColor: '#ffffff'
 };
 
 // Preset state (stored in memory, synced across all clients)
@@ -97,13 +105,35 @@ function loadDisplayPrefs() {
 
 function saveDisplayPrefs() {
   try {
+    // Check if mainWindow exists and is not destroyed
+    const isFullscreen = mainWindow && !mainWindow.isDestroyed() ? mainWindow.isFullScreen() : false;
     const prefs = {
       displayId: currentFullscreenDisplay,
-      isFullscreen: mainWindow ? mainWindow.isFullScreen() : false
+      isFullscreen: isFullscreen
     };
     fs.writeFileSync(prefsPath, JSON.stringify(prefs, null, 2));
   } catch (err) {
     console.error('Error saving display preferences:', err);
+  }
+}
+
+function loadSettings() {
+  try {
+    if (fs.existsSync(settingsPath)) {
+      const data = fs.readFileSync(settingsPath, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error('Error loading settings:', err);
+  }
+  return null;
+}
+
+function saveSettings(settings) {
+  try {
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+  } catch (err) {
+    console.error('Error saving settings:', err);
   }
 }
 
@@ -374,6 +404,8 @@ function startWebServer() {
     const settings = req.body;
     // Update server's settings state
     currentSettings = { ...currentSettings, ...settings };
+    // Save settings to disk
+    saveSettings(currentSettings);
     // Broadcast settings change to all WebSocket clients
     broadcastSettings(currentSettings);
     res.json({ success: true, settings: currentSettings });
@@ -710,6 +742,10 @@ function setupIpcHandlers() {
     return timerState;
   });
 
+  ipcMain.handle('get-settings', () => {
+    return currentSettings;
+  });
+
   ipcMain.handle('start-timer', () => {
     startTimer();
     return timerState;
@@ -739,6 +775,13 @@ function setupIpcHandlers() {
 app.whenReady().then(() => {
   // Set app name
   app.setName('Capacitimer');
+
+  // Load settings from disk
+  const savedSettings = loadSettings();
+  if (savedSettings) {
+    currentSettings = { ...currentSettings, ...savedSettings };
+    console.log('Loaded settings from disk:', currentSettings);
+  }
 
   setupIpcHandlers();
   createWindow();

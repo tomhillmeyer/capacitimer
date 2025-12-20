@@ -86,9 +86,13 @@
         let localUpdateInterval;
         let cachedState = null;
         let ws = null;
-        let fontSize = 20; // Font size in vw units
+        let fontSize = 20; // Font size in vw units for timer
+        let timeOfDayFontSize = 4; // Font size in vw units for time of day
+        let reconnectAttempts = 0;
+        let reconnectTimeout = null;
+        let connectionTimeout = null;
 
-        // Calculate optimal font size for display
+        // Calculate optimal font size for timer display
         function calculateFontSize() {
             const timerValue = document.getElementById('timerValue');
             const container = timerValue.parentElement;
@@ -99,7 +103,7 @@
             temp.style.position = 'absolute';
             temp.style.visibility = 'hidden';
             temp.style.whiteSpace = 'nowrap';
-            temp.style.fontFamily = 'monospace';
+            temp.style.fontFamily = settingsManager.get('timerFont') || 'monospace';
             temp.style.fontWeight = 'bold';
 
             // Generate a sample text with worst-case width (all segments at max)
@@ -142,17 +146,98 @@
             timerValue.style.fontSize = `${fontSize}vw`;
         }
 
+        // Calculate optimal font size for time of day display
+        function calculateTimeOfDayFontSize() {
+            const timerStatus = document.getElementById('timerStatus');
+            const container = timerStatus.parentElement;
+            if (!container || !settingsManager.get('showTimeOfDay')) return;
+
+            // Create a temporary element to measure text width
+            const temp = document.createElement('div');
+            temp.style.position = 'absolute';
+            temp.style.visibility = 'hidden';
+            temp.style.whiteSpace = 'nowrap';
+            temp.style.fontFamily = settingsManager.get('timerFont') || 'monospace';
+            temp.style.fontWeight = 'bold';
+            temp.style.letterSpacing = '0.2em';
+
+            // Sample text for worst-case width: "12:00 PM"
+            temp.textContent = '12:00 PM';
+            document.body.appendChild(temp);
+
+            // Binary search for optimal font size (in vw units)
+            const containerWidth = container.clientWidth;
+            let minSize = 1;
+            let maxSize = 15;
+            let optimalSize = 4;
+
+            while (maxSize - minSize > 0.1) {
+                const midSize = (minSize + maxSize) / 2;
+                temp.style.fontSize = `${midSize}vw`;
+
+                const textWidth = temp.offsetWidth;
+                const availableWidth = containerWidth * 0.95; // Leave 5% padding
+
+                if (textWidth <= availableWidth) {
+                    optimalSize = midSize;
+                    minSize = midSize;
+                } else {
+                    maxSize = midSize;
+                }
+            }
+
+            document.body.removeChild(temp);
+            timeOfDayFontSize = optimalSize;
+        }
+
         // WebSocket connection
         function connectWebSocket() {
+            // Clear any existing timeouts
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+                reconnectTimeout = null;
+            }
+            if (connectionTimeout) {
+                clearTimeout(connectionTimeout);
+                connectionTimeout = null;
+            }
+
+            // Close existing connection if any
+            if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+                ws.close();
+            }
+
             // Show connection overlay
             document.getElementById('connectionOverlay').classList.add('active');
 
             // Use the current hostname to connect to WebSocket server
             const wsHost = window.location.hostname;
-            ws = new WebSocket(`ws://${wsHost}:3001`);
+            console.log(`Attempting WebSocket connection to ws://${wsHost}:3001 (attempt ${reconnectAttempts + 1})`);
+
+            try {
+                ws = new WebSocket(`ws://${wsHost}:3001`);
+            } catch (error) {
+                console.error('Failed to create WebSocket:', error);
+                scheduleReconnect();
+                return;
+            }
+
+            // Set a connection timeout in case WebSocket never calls onopen or onclose
+            connectionTimeout = setTimeout(() => {
+                console.log('WebSocket connection timeout');
+                if (ws && ws.readyState === WebSocket.CONNECTING) {
+                    ws.close(); // Force close, which will trigger onclose
+                }
+            }, 5000);
 
             ws.onopen = () => {
-                console.log('WebSocket connected');
+                console.log('WebSocket connected successfully');
+                // Clear connection timeout
+                if (connectionTimeout) {
+                    clearTimeout(connectionTimeout);
+                    connectionTimeout = null;
+                }
+                reconnectAttempts = 0; // Reset on successful connection
                 // Hide connection overlay
                 document.getElementById('connectionOverlay').classList.remove('active');
                 // Fetch current state to sync
@@ -166,16 +251,18 @@
                     cachedState = message.data;
                     updateDisplay(message.data);
                 } else if (message.type === 'settings-update') {
-                    // Update settings from broadcast
+                    // Update settings from broadcast (without saving back to server)
                     const timeUnitChanged = ['showHours', 'showMinutes', 'showSeconds', 'showMilliseconds'].some(
                         key => message.data.hasOwnProperty(key)
                     );
-                    Object.keys(message.data).forEach(key => {
-                        settingsManager.set(key, message.data[key]);
-                    });
-                    // Recalculate font size if time units changed
-                    if (timeUnitChanged) {
+                    const timerFontChanged = ['timerFont'].some(
+                        key => message.data.hasOwnProperty(key)
+                    );
+                    settingsManager.setAllLocal(message.data);
+                    // Recalculate font size if time units or timer font changed
+                    if (timeUnitChanged || timerFontChanged) {
                         calculateFontSize();
+                        calculateTimeOfDayFontSize();
                     }
                     // Update display with new settings
                     if (cachedState) {
@@ -184,18 +271,35 @@
                 }
             };
 
-            ws.onclose = () => {
-                console.log('WebSocket disconnected, reconnecting...');
+            ws.onclose = (event) => {
+                console.log('WebSocket closed:', event.code, event.reason);
                 // Show connection overlay
                 document.getElementById('connectionOverlay').classList.add('active');
-                setTimeout(connectWebSocket, 1000);
+                scheduleReconnect();
             };
 
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
                 // Show connection overlay
                 document.getElementById('connectionOverlay').classList.add('active');
+                // Note: onclose will handle reconnection
             };
+        }
+
+        function scheduleReconnect() {
+            if (reconnectTimeout) {
+                return; // Already scheduled
+            }
+
+            reconnectAttempts++;
+            // Exponential backoff: 1s, 2s, 4s, 8s, max 10s
+            const delay = Math.min(1000 * Math.pow(2, Math.min(reconnectAttempts - 1, 3)), 10000);
+            console.log(`Scheduling reconnect in ${delay}ms`);
+
+            reconnectTimeout = setTimeout(() => {
+                reconnectTimeout = null;
+                connectWebSocket();
+            }, delay);
         }
 
         function formatTime(seconds) {
@@ -243,10 +347,16 @@
             const timerValue = document.getElementById('timerValue');
             const timerStatus = document.getElementById('timerStatus');
             const timerDisplay = document.querySelector('.timer-display');
+            const settings = settingsManager.getAll();
 
             let timeRemaining = calculateTimeRemaining(state);
 
             timerValue.textContent = formatTime(timeRemaining);
+
+            // Apply timer styling
+            timerValue.style.fontFamily = settings.timerFont || 'monospace';
+            const baseFontSize = fontSize * (settings.timerFontSize || 100) / 100;
+            timerValue.style.fontSize = `${baseFontSize}vw`;
 
             // Set red background and white text when counting up past zero
             if (timeRemaining < 0) {
@@ -264,6 +374,11 @@
             if (timeOfDay) {
                 timerStatus.textContent = timeOfDay;
                 timerStatus.style.display = 'block';
+                // Apply time of day styling
+                timerStatus.style.fontFamily = settings.timerFont || 'monospace';
+                const baseTODFontSize = timeOfDayFontSize * (settings.timeOfDayFontSize || 100) / 100;
+                timerStatus.style.fontSize = `${baseTODFontSize}vw`;
+                timerStatus.style.color = settings.timeOfDayColor || '#ffffff';
             } else {
                 timerStatus.style.display = 'none';
             }
@@ -292,21 +407,30 @@
             }
         }
 
-        // Connect to WebSocket for real-time updates
-        connectWebSocket();
+        // Load settings from server first
+        settingsManager.loadSettings().then(() => {
+            // Connect to WebSocket for real-time updates
+            connectWebSocket();
+
+            // Initial fetch (WebSocket will handle updates after this)
+            fetchTimerState();
+
+            // Calculate font sizes on load
+            setTimeout(() => {
+                calculateFontSize();
+                calculateTimeOfDayFontSize();
+            }, 100);
+        });
 
         // Update display locally at 10fps for smooth countdown when running
         localUpdateInterval = setInterval(updateLocalDisplay, 100);
 
         // Update clock every second
         setInterval(updateClock, 1000);
-
-        // Initial fetch (WebSocket will handle updates after this)
-        fetchTimerState();
-
-        // Calculate font size on load and window resize
-        setTimeout(calculateFontSize, 100);
-        window.addEventListener('resize', calculateFontSize);
+        window.addEventListener('resize', () => {
+            calculateFontSize();
+            calculateTimeOfDayFontSize();
+        });
     </script>
 </body>
 

@@ -830,6 +830,37 @@
                                     <input type="text" id="thresholdCritical" placeholder="HH:MM:SS">
                                 </div>
                             </div>
+
+                            <div class="settings-group">
+                                <h3>Timer Display Style</h3>
+                                <div class="toggle-item">
+                                    <span>Font</span>
+                                    <select id="timerFont" style="background: #2a2a2a; color: #fff; border: 1px solid #444; padding: 0.5rem; border-radius: 4px; cursor: pointer;">
+                                        <option value="monospace">System Monospace</option>
+                                        <option value="'Roboto Mono', monospace">Roboto Mono</option>
+                                        <option value="'Kode Mono', monospace">Kode Mono</option>
+                                        <option value="'PT Mono', monospace">PT Mono</option>
+                                        <option value="'Share Tech Mono', monospace">Share Tech Mono</option>
+                                        <option value="'Courier Prime', monospace">Courier Prime</option>
+                                    </select>
+                                </div>
+                                <div class="toggle-item">
+                                    <span>Font Size: <span id="timerFontSizeDisplay">100%</span></span>
+                                    <input type="range" id="timerFontSize" min="0" max="100" value="100" style="cursor: pointer;">
+                                </div>
+                            </div>
+
+                            <div class="settings-group">
+                                <h3>Time of Day Style</h3>
+                                <div class="toggle-item">
+                                    <span>Font Size: <span id="timeOfDayFontSizeDisplay">100%</span></span>
+                                    <input type="range" id="timeOfDayFontSize" min="0" max="100" value="100" style="cursor: pointer;">
+                                </div>
+                                <div class="color-threshold-item">
+                                    <input type="color" id="timeOfDayColor" value="#ffffff">
+                                    <span>Color</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -841,9 +872,14 @@
             let localUpdateInterval;
             let cachedState = null;
             let ws = null;
-            let previewFontSize = 20; // Font size in cqi units
+            let previewFontSize = 20; // Font size in cqi units for timer
+            let previewTimeOfDayFontSize = 4; // Font size in cqi units for time of day
+            let lastButtonState = null; // Track button state to avoid unnecessary updates
+            let reconnectAttempts = 0;
+            let reconnectTimeout = null;
+            let connectionTimeout = null;
 
-            // Calculate optimal font size for preview
+            // Calculate optimal font size for timer preview
             function calculatePreviewFontSize() {
                 const previewValue = document.getElementById('previewTimerValue');
                 const container = previewValue.closest('.output-preview');
@@ -854,7 +890,7 @@
                 temp.style.position = 'absolute';
                 temp.style.visibility = 'hidden';
                 temp.style.whiteSpace = 'nowrap';
-                temp.style.fontFamily = 'monospace';
+                temp.style.fontFamily = settingsManager.get('timerFont') || 'monospace';
                 temp.style.fontWeight = 'bold';
 
                 // Generate a sample text with worst-case width (all segments at max)
@@ -898,6 +934,51 @@
                 previewValue.style.fontSize = `${previewFontSize}cqi`;
             }
 
+            // Calculate optimal font size for time of day preview
+            function calculatePreviewTimeOfDayFontSize() {
+                const previewStatus = document.getElementById('previewTimerStatus');
+                const container = previewStatus.closest('.output-preview');
+                if (!container || !settingsManager.get('showTimeOfDay')) return;
+
+                // Create a temporary element to measure text width
+                const temp = document.createElement('div');
+                temp.style.position = 'absolute';
+                temp.style.visibility = 'hidden';
+                temp.style.whiteSpace = 'nowrap';
+                temp.style.fontFamily = settingsManager.get('timerFont') || 'monospace';
+                temp.style.fontWeight = 'bold';
+                temp.style.letterSpacing = '0.2em';
+
+                // Sample text for worst-case width: "12:00 PM"
+                temp.textContent = '12:00 PM';
+                document.body.appendChild(temp);
+
+                // Binary search for optimal font size (in cqi units)
+                const containerWidth = container.clientWidth;
+                let minSize = 1;
+                let maxSize = 15;
+                let optimalSize = 4;
+
+                while (maxSize - minSize > 0.1) {
+                    const midSize = (minSize + maxSize) / 2;
+                    // Convert cqi to pixels: 1cqi = 1% of container width
+                    temp.style.fontSize = `${(midSize * containerWidth) / 100}px`;
+
+                    const textWidth = temp.offsetWidth;
+                    const availableWidth = containerWidth * 0.95; // Leave 5% padding
+
+                    if (textWidth <= availableWidth) {
+                        optimalSize = midSize;
+                        minSize = midSize;
+                    } else {
+                        maxSize = midSize;
+                    }
+                }
+
+                document.body.removeChild(temp);
+                previewTimeOfDayFontSize = optimalSize;
+            }
+
             // Toggle settings modal
             function toggleSettings() {
                 const modal = document.getElementById('settingsModal');
@@ -914,15 +995,52 @@
 
             // WebSocket connection
             function connectWebSocket() {
+                // Clear any existing timeouts
+                if (reconnectTimeout) {
+                    clearTimeout(reconnectTimeout);
+                    reconnectTimeout = null;
+                }
+                if (connectionTimeout) {
+                    clearTimeout(connectionTimeout);
+                    connectionTimeout = null;
+                }
+
+                // Close existing connection if any
+                if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+                    ws.close();
+                }
+
                 // Show connection overlay
                 document.getElementById('connectionOverlay').classList.add('active');
 
                 // Use the current hostname to connect to WebSocket server
                 const wsHost = window.location.hostname;
-                ws = new WebSocket(`ws://${wsHost}:3001`);
+                console.log(`Attempting WebSocket connection to ws://${wsHost}:3001 (attempt ${reconnectAttempts + 1})`);
+
+                try {
+                    ws = new WebSocket(`ws://${wsHost}:3001`);
+                } catch (error) {
+                    console.error('Failed to create WebSocket:', error);
+                    scheduleReconnect();
+                    return;
+                }
+
+                // Set a connection timeout in case WebSocket never calls onopen or onclose
+                connectionTimeout = setTimeout(() => {
+                    console.log('WebSocket connection timeout');
+                    if (ws && ws.readyState === WebSocket.CONNECTING) {
+                        ws.close(); // Force close, which will trigger onclose
+                    }
+                }, 5000);
 
                 ws.onopen = () => {
-                    console.log('WebSocket connected');
+                    console.log('WebSocket connected successfully');
+                    // Clear connection timeout
+                    if (connectionTimeout) {
+                        clearTimeout(connectionTimeout);
+                        connectionTimeout = null;
+                    }
+                    reconnectAttempts = 0; // Reset on successful connection
                     // Hide connection overlay
                     document.getElementById('connectionOverlay').classList.remove('active');
                     // Fetch current state to sync
@@ -936,10 +1054,8 @@
                         cachedState = message.data;
                         updateDisplay(message.data);
                     } else if (message.type === 'settings-update') {
-                        // Update settings from broadcast
-                        Object.keys(message.data).forEach(key => {
-                            settingsManager.set(key, message.data[key]);
-                        });
+                        // Update settings from broadcast (without saving back to server)
+                        settingsManager.setAllLocal(message.data);
                         // Update UI elements (without re-adding listeners)
                         updateSettingsUI();
                         // Update display with new settings
@@ -957,18 +1073,35 @@
                     }
                 };
 
-                ws.onclose = () => {
-                    console.log('WebSocket disconnected, reconnecting...');
+                ws.onclose = (event) => {
+                    console.log('WebSocket closed:', event.code, event.reason);
                     // Show connection overlay
                     document.getElementById('connectionOverlay').classList.add('active');
-                    setTimeout(connectWebSocket, 1000);
+                    scheduleReconnect();
                 };
 
                 ws.onerror = (error) => {
                     console.error('WebSocket error:', error);
                     // Show connection overlay
                     document.getElementById('connectionOverlay').classList.add('active');
+                    // Note: onclose will handle reconnection
                 };
+            }
+
+            function scheduleReconnect() {
+                if (reconnectTimeout) {
+                    return; // Already scheduled
+                }
+
+                reconnectAttempts++;
+                // Exponential backoff: 1s, 2s, 4s, 8s, max 10s
+                const delay = Math.min(1000 * Math.pow(2, Math.min(reconnectAttempts - 1, 3)), 10000);
+                console.log(`Scheduling reconnect in ${delay}ms`);
+
+                reconnectTimeout = setTimeout(() => {
+                    reconnectTimeout = null;
+                    connectWebSocket();
+                }, delay);
             }
 
             // Broadcast settings changes to other clients
@@ -1047,10 +1180,16 @@
                 // Update preview display
                 const previewTimerValue = document.getElementById('previewTimerValue');
                 const previewTimerStatus = document.getElementById('previewTimerStatus');
+                const settings = settingsManager.getAll();
 
                 let timeRemaining = calculateTimeRemaining(state);
 
                 previewTimerValue.textContent = formatTime(timeRemaining);
+
+                // Apply timer styling
+                previewTimerValue.style.fontFamily = settings.timerFont || 'monospace';
+                const baseFontSize = previewFontSize * (settings.timerFontSize || 100) / 100;
+                previewTimerValue.style.fontSize = `${baseFontSize}cqi`;
 
                 // Get the preview container to update background
                 const previewContainer = document.querySelector('.output-preview');
@@ -1069,6 +1208,11 @@
                 if (timeOfDay) {
                     previewTimerStatus.textContent = timeOfDay;
                     previewTimerStatus.style.display = 'block';
+                    // Apply time of day styling
+                    previewTimerStatus.style.fontFamily = settings.timerFont || 'monospace';
+                    const baseTODFontSize = previewTimeOfDayFontSize * (settings.timeOfDayFontSize || 100) / 100;
+                    previewTimerStatus.style.fontSize = `${baseTODFontSize}cqi`;
+                    previewTimerStatus.style.color = settings.timeOfDayColor || '#ffffff';
                 } else {
                     previewTimerStatus.style.display = 'none';
                 }
@@ -1103,14 +1247,17 @@
                 const endDate = new Date(projectedEndTime);
                 document.getElementById('infoEndTime').textContent = formatTimeOfDayFromDate(endDate);
 
-                // Update Start/Pause button
-                const startPauseBtn = document.getElementById('startPauseBtn');
-                if (state.isRunning) {
-                    startPauseBtn.innerHTML = '<img src="/icons/pause.svg" alt="Pause" style="height: 3em; vertical-align: middle;">';
-                    startPauseBtn.className = 'btn-pause';
-                } else {
-                    startPauseBtn.innerHTML = '<img src="/icons/play.svg" alt="Play" style="height: 3em; vertical-align: middle;">';
-                    startPauseBtn.className = 'btn-start';
+                // Update Start/Pause button (only if state changed to avoid flickering)
+                if (lastButtonState !== state.isRunning) {
+                    const startPauseBtn = document.getElementById('startPauseBtn');
+                    if (state.isRunning) {
+                        startPauseBtn.innerHTML = '<img src="/icons/pause.svg" alt="Pause" style="height: 3em; vertical-align: middle;">';
+                        startPauseBtn.className = 'btn-pause';
+                    } else {
+                        startPauseBtn.innerHTML = '<img src="/icons/play.svg" alt="Play" style="height: 3em; vertical-align: middle;">';
+                        startPauseBtn.className = 'btn-start';
+                    }
+                    lastButtonState = state.isRunning;
                 }
             }
 
@@ -1412,6 +1559,25 @@
                 // Load threshold values as time strings (skip thresholdNormal as it's just the default color)
                 document.getElementById('thresholdWarning').value = settingsManager.secondsToTimeString(settings.thresholdWarning);
                 document.getElementById('thresholdCritical').value = settingsManager.secondsToTimeString(settings.thresholdCritical);
+
+                // Load display style settings
+                document.getElementById('timerFont').value = settings.timerFont || 'monospace';
+                // Clamp font size values to 0-100 range
+                const timerSize = Math.min(100, Math.max(0, settings.timerFontSize || 100));
+                const todSize = Math.min(100, Math.max(0, settings.timeOfDayFontSize || 100));
+                document.getElementById('timerFontSize').value = timerSize;
+                document.getElementById('timerFontSizeDisplay').textContent = timerSize + '%';
+                document.getElementById('timeOfDayFontSize').value = todSize;
+                document.getElementById('timeOfDayFontSizeDisplay').textContent = todSize + '%';
+                document.getElementById('timeOfDayColor').value = settings.timeOfDayColor || '#ffffff';
+
+                // Update settings if they were clamped
+                if (timerSize !== settings.timerFontSize) {
+                    settingsManager.set('timerFontSize', timerSize);
+                }
+                if (todSize !== settings.timeOfDayFontSize) {
+                    settingsManager.set('timeOfDayFontSize', todSize);
+                }
             }
 
             // Initialize settings UI and attach event listeners (call once on startup)
@@ -1475,8 +1641,51 @@
                     });
                 });
 
-                // Recalculate font size on window resize
-                window.addEventListener('resize', calculatePreviewFontSize);
+                // Add display style listeners
+                document.getElementById('timerFont').addEventListener('change', (e) => {
+                    settingsManager.set('timerFont', e.target.value);
+                    calculatePreviewFontSize();
+                    calculatePreviewTimeOfDayFontSize();
+                    if (cachedState) {
+                        updateDisplay(cachedState);
+                    }
+                    broadcastSettings();
+                });
+
+                document.getElementById('timerFontSize').addEventListener('input', (e) => {
+                    const value = parseInt(e.target.value);
+                    document.getElementById('timerFontSizeDisplay').textContent = value + '%';
+                    settingsManager.set('timerFontSize', value);
+                    if (cachedState) {
+                        updateDisplay(cachedState);
+                    }
+                    broadcastSettings();
+                });
+
+
+                document.getElementById('timeOfDayFontSize').addEventListener('input', (e) => {
+                    const value = parseInt(e.target.value);
+                    document.getElementById('timeOfDayFontSizeDisplay').textContent = value + '%';
+                    settingsManager.set('timeOfDayFontSize', value);
+                    if (cachedState) {
+                        updateDisplay(cachedState);
+                    }
+                    broadcastSettings();
+                });
+
+                document.getElementById('timeOfDayColor').addEventListener('input', (e) => {
+                    settingsManager.set('timeOfDayColor', e.target.value);
+                    if (cachedState) {
+                        updateDisplay(cachedState);
+                    }
+                    broadcastSettings();
+                });
+
+                // Recalculate font sizes on window resize
+                window.addEventListener('resize', () => {
+                    calculatePreviewFontSize();
+                    calculatePreviewTimeOfDayFontSize();
+                });
             }
 
             // Allow Enter key to submit custom time
@@ -1493,11 +1702,10 @@
                 }
             });
 
-            // Initialize settings
-            initializeSettings();
-
-            // Send current settings to server on startup (so server state matches localStorage)
-            broadcastSettings();
+            // Initialize settings - load from server first
+            settingsManager.loadSettings().then(() => {
+                initializeSettings();
+            });
 
             // Connect to WebSocket for real-time updates
             connectWebSocket();
@@ -1515,8 +1723,11 @@
             // Initial fetch (WebSocket will handle updates after this)
             fetchTimerState();
 
-            // Calculate preview font size on load (after a short delay to ensure layout is ready)
-            setTimeout(calculatePreviewFontSize, 100);
+            // Calculate preview font sizes on load (after a short delay to ensure layout is ready)
+            setTimeout(() => {
+                calculatePreviewFontSize();
+                calculatePreviewTimeOfDayFontSize();
+            }, 100);
 
             // ===== Custom Preset Management =====
 

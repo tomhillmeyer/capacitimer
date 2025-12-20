@@ -10,6 +10,7 @@ export interface TimerState {
 
 export interface ElectronAPI {
   getTimerState: () => Promise<TimerState>;
+  getSettings: () => Promise<any>;
   startTimer: () => Promise<TimerState>;
   pauseTimer: () => Promise<TimerState>;
   resetTimer: () => Promise<TimerState>;

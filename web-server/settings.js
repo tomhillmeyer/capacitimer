@@ -1,5 +1,5 @@
 // Capacitimer Settings Manager
-// Handles persistent settings stored in localStorage
+// Handles settings fetched from server
 
 const DEFAULT_SETTINGS = {
     showHours: true,
@@ -13,30 +13,49 @@ const DEFAULT_SETTINGS = {
     thresholdWarning: 60,  // 1:00
     thresholdCritical: 0,  // 0:00
     countUpAfterZero: false,
-    showTimeOfDay: true
+    showTimeOfDay: true,
+    timerFont: 'monospace',
+    timerFontSize: 100,  // percentage (0-100)
+    timeOfDayFontSize: 100,  // percentage (0-100)
+    timeOfDayColor: '#ffffff'
 };
 
 class SettingsManager {
     constructor() {
-        this.settings = this.loadSettings();
+        this.settings = { ...DEFAULT_SETTINGS };
         this.listeners = [];
+        this.initialized = false;
     }
 
-    loadSettings() {
+    async loadSettings() {
         try {
-            const stored = localStorage.getItem('capacitimerSettings');
-            if (stored) {
-                return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+            const response = await fetch('/api/settings');
+            if (response.ok) {
+                const serverSettings = await response.json();
+                this.settings = { ...DEFAULT_SETTINGS, ...serverSettings };
+                this.initialized = true;
+                this.notifyListeners();
+                return this.settings;
             }
         } catch (error) {
-            console.error('Failed to load settings:', error);
+            console.error('Failed to load settings from server:', error);
         }
+        this.initialized = true;
         return { ...DEFAULT_SETTINGS };
     }
 
-    saveSettings() {
+    async saveSettings() {
         try {
-            localStorage.setItem('capacitimerSettings', JSON.stringify(this.settings));
+            const response = await fetch('/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(this.settings),
+            });
+            if (!response.ok) {
+                console.error('Failed to save settings to server');
+            }
             this.notifyListeners();
         } catch (error) {
             console.error('Failed to save settings:', error);
@@ -52,6 +71,12 @@ class SettingsManager {
         this.saveSettings();
     }
 
+    // Update setting locally without saving to server (for WebSocket updates)
+    setLocal(key, value) {
+        this.settings[key] = value;
+        this.notifyListeners();
+    }
+
     getAll() {
         return { ...this.settings };
     }
@@ -59,6 +84,12 @@ class SettingsManager {
     setAll(newSettings) {
         this.settings = { ...this.settings, ...newSettings };
         this.saveSettings();
+    }
+
+    // Update settings locally without saving to server (for WebSocket updates)
+    setAllLocal(newSettings) {
+        this.settings = { ...this.settings, ...newSettings };
+        this.notifyListeners();
     }
 
     reset() {

@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getTimerState: () => ipcRenderer.invoke('get-timer-state'),
+  getSettings: () => ipcRenderer.invoke('get-settings'),
   startTimer: () => ipcRenderer.invoke('start-timer'),
   pauseTimer: () => ipcRenderer.invoke('pause-timer'),
   resetTimer: () => ipcRenderer.invoke('reset-timer'),

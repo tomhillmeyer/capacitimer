@@ -4,7 +4,7 @@
 /* Jura font family - using static fonts for better iOS compatibility */
 @font-face {
     font-family: 'Jura';
-    src: url('./fonts/Jura/Jura-Light.ttf') format('truetype');
+    src: url('/fonts/Jura/Jura-Light.ttf') format('truetype');
     font-weight: 300;
     font-style: normal;
     font-display: swap;
@@ -12,7 +12,7 @@
 
 @font-face {
     font-family: 'Jura';
-    src: url('./fonts/Jura/Jura-Regular.ttf') format('truetype');
+    src: url('/fonts/Jura/Jura-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -20,7 +20,7 @@
 
 @font-face {
     font-family: 'Jura';
-    src: url('./fonts/Jura/Jura-Medium.ttf') format('truetype');
+    src: url('/fonts/Jura/Jura-Medium.ttf') format('truetype');
     font-weight: 500;
     font-style: normal;
     font-display: swap;
@@ -28,7 +28,7 @@
 
 @font-face {
     font-family: 'Jura';
-    src: url('./fonts/Jura/Jura-SemiBold.ttf') format('truetype');
+    src: url('/fonts/Jura/Jura-SemiBold.ttf') format('truetype');
     font-weight: 600;
     font-style: normal;
     font-display: swap;
@@ -36,7 +36,7 @@
 
 @font-face {
     font-family: 'Jura';
-    src: url('./fonts/Jura/Jura-Bold.ttf') format('truetype');
+    src: url('/fonts/Jura/Jura-Bold.ttf') format('truetype');
     font-weight: 700;
     font-style: normal;
     font-display: swap;
@@ -45,7 +45,7 @@
 /* Monospace fonts for timer display */
 @font-face {
     font-family: 'Roboto Mono';
-    src: url('./fonts/Roboto_Mono/RobotoMono-Regular.ttf') format('truetype');
+    src: url('/fonts/Roboto_Mono/RobotoMono-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -53,15 +53,15 @@
 
 @font-face {
     font-family: 'Kode Mono';
-    src: url('./fonts/Kode_Mono/KodeMono-Regular.ttf') format('truetype');
+    src: url('/fonts/Kode_Mono/KodeMono-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
 }
 
 @font-face {
-    font-family: 'PT Mono';
-    src: url('./fonts/PT_Mono/PTMono-Regular.ttf') format('truetype');
+    font-family: 'Major Mono Display';
+    src: url('/fonts/Major_Mono_Display/MajorMonoDisplay-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -69,7 +69,7 @@
 
 @font-face {
     font-family: 'Share Tech Mono';
-    src: url('./fonts/Share_Tech_Mono/ShareTechMono-Regular.ttf') format('truetype');
+    src: url('/fonts/Share_Tech_Mono/ShareTechMono-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -77,7 +77,7 @@
 
 @font-face {
     font-family: 'Courier Prime';
-    src: url('./fonts/Courier_Prime/CourierPrime-Regular.ttf') format('truetype');
+    src: url('/fonts/Courier_Prime/CourierPrime-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;

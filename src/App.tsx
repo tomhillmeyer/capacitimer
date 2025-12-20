@@ -15,6 +15,10 @@ interface Settings {
   thresholdCritical: number;
   countUpAfterZero: boolean;
   showTimeOfDay: boolean;
+  timerFont: string;
+  timerFontSize: number;
+  timeOfDayFontSize: number;
+  timeOfDayColor: string;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -30,6 +34,17 @@ const DEFAULT_SETTINGS: Settings = {
   thresholdCritical: 0,  // 0:00
   countUpAfterZero: false,
   showTimeOfDay: true,
+  timerFont: 'monospace',
+  timerFontSize: 100,
+  timeOfDayFontSize: 100,
+  timeOfDayColor: '#ffffff',
+};
+
+// Load settings from Electron IPC if available, otherwise use defaults
+const loadInitialSettings = (): Settings => {
+  // For Electron app, settings will be loaded via IPC after mount
+  // For web clients, they'll get settings from WebSocket connection
+  return { ...DEFAULT_SETTINGS };
 };
 
 function App() {
@@ -44,12 +59,15 @@ function App() {
   });
   const [displayTime, setDisplayTime] = useState(0); // Calculated locally for smooth millisecond updates
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<Settings>(loadInitialSettings()); // Load from localStorage immediately
   const [isConnected, setIsConnected] = useState(true);
-  const [fontSize, setFontSize] = useState<number>(20); // Font size in vw units
+  const [isElectron, setIsElectron] = useState(false); // Track if running in Electron
+  const [fontSize, setFontSize] = useState<number>(20); // Font size in vw units for timer
+  const [timeOfDayFontSize, setTimeOfDayFontSize] = useState<number>(4); // Font size in vw units for time of day
   const timerValueRef = useRef<HTMLDivElement>(null);
+  const timeOfDayRef = useRef<HTMLDivElement>(null);
 
-  // Calculate optimal font size when settings change or when timer starts
+  // Calculate optimal font size for timer when settings change
   useEffect(() => {
     const calculateFontSize = () => {
       if (!timerValueRef.current) return;
@@ -62,7 +80,7 @@ function App() {
       temp.style.position = 'absolute';
       temp.style.visibility = 'hidden';
       temp.style.whiteSpace = 'nowrap';
-      temp.style.fontFamily = 'monospace';
+      temp.style.fontFamily = settings.timerFont || 'monospace';
       temp.style.fontWeight = 'bold';
 
       // Generate a sample text with worst-case width (all segments at max)
@@ -110,23 +128,72 @@ function App() {
     // Recalculate on window resize
     window.addEventListener('resize', calculateFontSize);
     return () => window.removeEventListener('resize', calculateFontSize);
-  }, [settings.showHours, settings.showMinutes, settings.showSeconds, settings.showMilliseconds]);
+  }, [settings.showHours, settings.showMinutes, settings.showSeconds, settings.showMilliseconds, settings.timerFont]);
+
+  // Calculate optimal font size for time of day when settings change
+  useEffect(() => {
+    const calculateTimeOfDayFontSize = () => {
+      if (!timeOfDayRef.current || !settings.showTimeOfDay) return;
+
+      const container = timeOfDayRef.current.parentElement;
+      if (!container) return;
+
+      // Create a temporary element to measure text width
+      const temp = document.createElement('div');
+      temp.style.position = 'absolute';
+      temp.style.visibility = 'hidden';
+      temp.style.whiteSpace = 'nowrap';
+      temp.style.fontFamily = settings.timerFont || 'monospace';
+      temp.style.fontWeight = 'bold';
+      temp.style.letterSpacing = '0.2em';
+
+      // Sample text for worst-case width: "12:00 PM"
+      temp.textContent = '12:00 PM';
+      document.body.appendChild(temp);
+
+      // Binary search for optimal font size (in vw units)
+      const containerWidth = container.clientWidth;
+      let minSize = 1;
+      let maxSize = 15;
+      let optimalSize = 4;
+
+      while (maxSize - minSize > 0.1) {
+        const midSize = (minSize + maxSize) / 2;
+        temp.style.fontSize = `${midSize}vw`;
+
+        const textWidth = temp.offsetWidth;
+        const availableWidth = containerWidth * 0.95; // Leave 5% padding
+
+        if (textWidth <= availableWidth) {
+          optimalSize = midSize;
+          minSize = midSize;
+        } else {
+          maxSize = midSize;
+        }
+      }
+
+      document.body.removeChild(temp);
+      setTimeOfDayFontSize(optimalSize);
+    };
+
+    // Calculate on settings change
+    calculateTimeOfDayFontSize();
+
+    // Recalculate on window resize
+    window.addEventListener('resize', calculateTimeOfDayFontSize);
+    return () => window.removeEventListener('resize', calculateTimeOfDayFontSize);
+  }, [settings.showTimeOfDay, settings.timerFont]);
 
   useEffect(() => {
-    // Load settings from localStorage on startup
-    try {
-      const stored = localStorage.getItem('capacitimerSettings');
-      if (stored) {
-        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(stored) });
-      }
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-    }
-
     // Check if we're in Electron
-    if (window.electronAPI) {
-      // Get initial state
+    const isElectronApp = !!window.electronAPI;
+    if (isElectronApp) {
+      setIsElectron(true);
+      // Get initial state and settings from Electron
       window.electronAPI.getTimerState().then(setTimerState);
+      window.electronAPI.getSettings().then((electronSettings) => {
+        setSettings({ ...DEFAULT_SETTINGS, ...electronSettings });
+      });
 
       // Listen for updates
       window.electronAPI.onTimerUpdate(setTimerState);
@@ -136,19 +203,25 @@ function App() {
     let ws: WebSocket;
 
     const connectWebSocket = () => {
-      setIsConnected(false);
+      // Don't show connection status for Electron (it's always "connected")
+      if (!isElectronApp) {
+        setIsConnected(false);
+      }
 
       ws = new WebSocket('ws://localhost:3001');
 
       ws.onopen = () => {
         console.log('WebSocket connected');
-        setIsConnected(true);
+        if (!isElectronApp) {
+          setIsConnected(true);
+        }
       };
 
       ws.onmessage = (event) => {
         const message = JSON.parse(event.data);
 
-        if (message.type === 'timer-update') {
+        // Electron only needs settings updates, not timer updates (uses IPC)
+        if (message.type === 'timer-update' && !isElectronApp) {
           setTimerState(message.data);
         } else if (message.type === 'settings-update') {
           // Update settings with new values from broadcast
@@ -158,13 +231,17 @@ function App() {
 
       ws.onclose = () => {
         console.log('WebSocket disconnected, reconnecting...');
-        setIsConnected(false);
+        if (!isElectronApp) {
+          setIsConnected(false);
+        }
         setTimeout(connectWebSocket, 1000);
       };
 
       ws.onerror = (error) => {
         console.error('WebSocket error:', error);
-        setIsConnected(false);
+        if (!isElectronApp) {
+          setIsConnected(false);
+        }
       };
     };
 
@@ -320,7 +397,7 @@ function App() {
 
   return (
     <>
-      {!isConnected && (
+      {!isElectron && !isConnected && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -353,13 +430,22 @@ function App() {
           className="timer-value"
           style={{
             color: getDisplayColor(),
-            fontSize: `${fontSize}vw`
+            fontSize: `${fontSize * (settings.timerFontSize / 100)}vw`,
+            fontFamily: settings.timerFont || 'monospace'
           }}
         >
           {formatTime(displayTime)}
         </div>
         {settings.showTimeOfDay && (
-          <div className="timer-status">
+          <div
+            ref={timeOfDayRef}
+            className="timer-status"
+            style={{
+              fontFamily: settings.timerFont || 'monospace',
+              fontSize: `${timeOfDayFontSize * (settings.timeOfDayFontSize / 100)}vw`,
+              color: settings.timeOfDayColor || '#ffffff'
+            }}
+          >
             {formatTimeOfDay(currentTime)}
           </div>
         )}
