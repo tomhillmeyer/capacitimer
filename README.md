@@ -23,6 +23,13 @@ You can also access these pages at `capacitimer.local` which is especially helpf
 
 `capacitimer.local/display`
 
+## Settings
+
+You control and adjust the timer at `capacitimer.local/control` or `YOUR_IP_ADDRESS/control`
+
+![Control](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control-annotated.png?raw=true)
+![Control](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/capacitimer-settings.png?raw=true)
+
 ## Workflow
 
 The original intention of this app was to run this app on a computer that is outputing the display, while controlling it by another computer on the same network.
