@@ -23,9 +23,9 @@ You can also access these pages at `capacitimer.local` which is especially helpf
 
 `capacitimer.local/display`
 
-## Settings
+## Control and Settings
 
-You control and adjust the timer at `capacitimer.local/control` or `YOUR_IP_ADDRESS/control`
+You control and adjust the timer at `capacitimer.local/control` or `YOUR_IP_ADDRESS/control`. There is a gear button at the top center of the page to adjust settings.
 
 ![Control Left](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control-annotated-left.png?raw=true)
 ![Control Right](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control-annotated-right.png?raw=true)
