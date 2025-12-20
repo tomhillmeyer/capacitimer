@@ -3,6 +3,9 @@
 
 A flexible, network-controllable speaker timer.
 
+![Control](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control.png?raw=true)
+
+
 ## How to use
 
 This app runs a web server at `localhost:80` and `capactimer.local:80`and displays the timer output in the app itself.
