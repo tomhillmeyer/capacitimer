@@ -11,7 +11,7 @@
     <title>Capacitimer</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="/capacitimer.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/capacitimer-180.png">
+    <link rel="apple-touch-icon" href="/capacitimer.png">
     <link rel="stylesheet" href="/shared-styles.css">
     <script src="/settings.js"></script>
     <style>
