@@ -5,10 +5,11 @@ A flexible, network-controllable speaker timer.
 
 ![Control](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control.png?raw=true)
 
-
 ## How to use
 
-This app runs a web server at `localhost:80` and `capactimer.local:80`and displays the timer output in the app itself.
+Short answer: Launch the app and go to `capacitimer.local` in any browser on the same network.
+
+Long answer: This app runs a web server at `localhost:80` and `capactimer.local:80`and displays the timer output in the app itself.
 
 Since port 80 is HTTP's default, you can access the control and display pages at:
 
@@ -16,7 +17,7 @@ Since port 80 is HTTP's default, you can access the control and display pages at
 
 `YOUR_IP_ADDRESS/display`
 
-You can also access them at the following, if you don't know the IP address of your server:
+You can also access these pages at `capacitimer.local` which is especially helpful if you're using this app often in environments where the IP address may be changing.
 
 `capactimer.local/control`
 
