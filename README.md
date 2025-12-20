@@ -27,10 +27,19 @@ You can also access these pages at `capacitimer.local` which is especially helpf
 
 You control and adjust the timer at `capacitimer.local/control` or `YOUR_IP_ADDRESS/control`. There is a gear button at the top center of the page to adjust settings.
 
+### Control Page
+
 ![Control Left](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control-annotated-left.png?raw=true)
 ![Control Right](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/control-annotated-right.png?raw=true)
+
+### Settings Page
+
 ![Settings Left](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/capacitimer-settings-left.png?raw=true)
 ![Settings Right](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/capacitimer-settings-right.png?raw=true)
+
+### Toolbar Icon
+
+![Toolbar](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/screenshots/capacitimer-toolbar.png?raw=true)
 
 ## Workflow
 
