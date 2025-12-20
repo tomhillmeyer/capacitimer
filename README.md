@@ -1,7 +1,7 @@
 
 ![Logo](https://github.com/tomhillmeyer/capacitimer/blob/main/assets/capacitimer-wordmark.png?raw=true)
 
-A flexible, network-controllable speaker timer
+A flexible, network-controllable speaker timer.
 
 ## How to use
 
@@ -28,13 +28,20 @@ There is a display view on the web server, so you could run this headless on you
 Finally, you could run the app on a computer on an external display and control it locally on a browser on another monitor.
 
 
-
-
 ## Installation
 
-### Linux Server Installation (Raspberry Pi / Intel NUC)
+### Desktop Installation
 
-One-line install for Raspberry Pi (Pi OS/Pi OS Lite) or Intel NUC (Ubuntu):
+Download the latest release for your platform:
+- **macOS**: `Capacitimer-X.X.X-mac-arm64.dmg` (Apple Silicon) or `Capacitimer-X.X.X-mac-x64.dmg` (Intel)
+- **Windows**: `Capacitimer-X.X.X-windows-x64.exe`
+- **Linux Desktop**: `Capacitimer-X.X.X-linux-arm64.deb` (ARM) or `Capacitimer-X.X.X-linux-amd64.deb` (x64)
+
+Get the latest releases at: https://github.com/tomhillmeyer/capacitimer/releases
+
+### Linux Server Installation (Raspberry Pi, Intel NUC, etc.)
+
+Run this command to install the latest version of Capacitimer on your device. This will set up your device to launch the app full screen on boot. Run this same command again to update your device to the latest version.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tomhillmeyer/capacitimer/main/install.sh | bash
@@ -45,26 +52,13 @@ After installation completes, reboot:
 sudo reboot
 ```
 
-The system will automatically boot to fullscreen timer display. Control it from any device on your network at `http://DEVICE_IP/control.html`
-
-For detailed instructions, see [QUICK-START.md](QUICK-START.md).
-
-### Desktop Installation
-
-Download the latest release for your platform:
-- **macOS**: `Capacitimer-X.X.X-mac-arm64.dmg` (Apple Silicon) or `Capacitimer-X.X.X-mac-x64.dmg` (Intel)
-- **Windows**: `Capacitimer-X.X.X-windows-x64.exe`
-- **Linux Desktop**: `Capacitimer-X.X.X-linux-amd64.deb` or `.tar.gz`
-
-Get the latest releases at: https://github.com/tomhillmeyer/capacitimer/releases
-
 ## API (beta)
 
 Capacitimer provides both a REST API and WebSocket interface for remote control and integration with external systems. Control the timer programmatically, integrate with automation tools, or build custom interfaces.
 
 For complete API documentation including all endpoints, WebSocket events, and integration examples, see [API.md](API.md).
 
-NOTE: API commands subject to change in future versions
+NOTE: API commands subject to change in future versions.
 
 ### Quick Start
 
@@ -99,15 +93,9 @@ The module will provide:
 
 - Background color / images
 
-- Custom presets
-
-- Custom fonts
-
 - Message displays
 
 - Counting up
-
-
 
 
 ## Screenshots
