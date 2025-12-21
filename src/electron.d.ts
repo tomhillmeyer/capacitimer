@@ -2,9 +2,10 @@ export interface TimerState {
   timeRemaining: number;
   isRunning: boolean;
   isPaused: boolean;
-  lastSetTime: number;
   endTime: number | null;
   pausedTimeRemaining: number;
+  startTime: number | null;
+  resetTime: number;
   serverTime?: number;
 }
 

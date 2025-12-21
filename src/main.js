@@ -27,11 +27,10 @@ let timerState = {
   timeRemaining: 0, // in seconds (calculated from endTime)
   isRunning: false,
   isPaused: false,
-  lastSetTime: 0, // Track the last set time for reset
   endTime: null, // Absolute timestamp when timer should end
   pausedTimeRemaining: 0, // Time remaining when paused
   startTime: null, // Timestamp when timer was last started
-  initialTimeRemaining: 0, // Initial time set for the current timer session
+  resetTime: 0, // Time to reset to when reset button is pressed
 };
 
 // Settings state (stored in memory, synced across all clients)
@@ -567,7 +566,7 @@ function startTimer() {
   if (currentTimeRemaining <= 0) return;
 
   // When starting, lock in the reset time to whatever is currently showing
-  timerState.initialTimeRemaining = Math.ceil(currentTimeRemaining);
+  timerState.resetTime = Math.ceil(currentTimeRemaining);
 
   timerState.isRunning = true;
   timerState.isPaused = false;
@@ -643,9 +642,9 @@ function resetTimer() {
     timerInterval = null;
   }
 
-  // Reset to initialTimeRemaining (the time showing when start was pressed)
-  timerState.timeRemaining = timerState.initialTimeRemaining;
-  timerState.pausedTimeRemaining = timerState.initialTimeRemaining;
+  // Reset to resetTime (the time showing when start was pressed)
+  timerState.timeRemaining = timerState.resetTime;
+  timerState.pausedTimeRemaining = timerState.resetTime;
   broadcastTimerUpdate();
 
   // If it was running (not paused), restart it
@@ -664,8 +663,7 @@ function setTimer(seconds, keepRunning = false, targetEndTime = null) {
 
   timerState.timeRemaining = seconds;
   timerState.pausedTimeRemaining = preciseRemaining;
-  timerState.lastSetTime = seconds; // Remember this for reset
-  timerState.initialTimeRemaining = seconds; // Track initial time for display
+  timerState.resetTime = seconds; // Track time for reset
 
   if (!keepRunning) {
     timerState.isRunning = false;
@@ -722,13 +720,13 @@ function adjustTimer(seconds) {
   if (timerState.isRunning) {
     // Adjust the end time while running
     timerState.endTime = Date.now() + (newTimeRemaining * 1000);
-    // Also adjust initialTimeRemaining so reset goes to the new adjusted time
-    timerState.initialTimeRemaining = Math.ceil(newTimeRemaining);
+    // Also adjust resetTime so reset goes to the new adjusted time
+    timerState.resetTime = Math.ceil(newTimeRemaining);
   } else {
-    // When stopped, update the time and initialTimeRemaining
+    // When stopped, update the time and resetTime
     timerState.pausedTimeRemaining = newTimeRemaining;
     timerState.timeRemaining = newTimeRemaining;
-    timerState.initialTimeRemaining = Math.ceil(newTimeRemaining);
+    timerState.resetTime = Math.ceil(newTimeRemaining);
   }
 
   broadcastTimerUpdate();

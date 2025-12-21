@@ -53,11 +53,10 @@ Returns the current timer state including time remaining, running status, and ti
   "timeRemaining": 120,
   "isRunning": true,
   "isPaused": false,
-  "lastSetTime": 300,
   "endTime": 1702345678901,
   "pausedTimeRemaining": 0,
   "startTime": 1702345558901,
-  "initialTimeRemaining": 300,
+  "resetTime": 300,
   "serverTime": 1702345558901
 }
 ```
@@ -66,11 +65,10 @@ Returns the current timer state including time remaining, running status, and ti
 - `timeRemaining` (number): Current time remaining in seconds
 - `isRunning` (boolean): Whether timer is actively counting down
 - `isPaused` (boolean): Whether timer is paused
-- `lastSetTime` (number): Last time value set (for reset functionality)
 - `endTime` (number|null): Absolute timestamp when timer will reach zero
 - `pausedTimeRemaining` (number): Time remaining when paused (includes fractional seconds)
 - `startTime` (number|null): Timestamp when timer was last started
-- `initialTimeRemaining` (number): Initial time set for current timer session
+- `resetTime` (number): Time in seconds that reset button will return to
 - `serverTime` (number): Current server timestamp for synchronization
 
 ---
@@ -114,7 +112,7 @@ Pauses the timer, preserving the current time remaining with millisecond precisi
 POST /api/timer/reset
 ```
 
-Resets the timer to the last set time. If the timer was running (not paused), it will automatically restart after reset.
+Resets the timer to `resetTime` (the time showing when start was last pressed). If the timer was running (not paused), it will automatically restart after reset.
 
 **Response:**
 ```json
@@ -327,11 +325,10 @@ Broadcast every 100ms while timer is running, and whenever timer state changes.
     "timeRemaining": 120,
     "isRunning": true,
     "isPaused": false,
-    "lastSetTime": 300,
     "endTime": 1702345678901,
     "pausedTimeRemaining": 0,
     "startTime": 1702345558901,
-    "initialTimeRemaining": 300,
+    "resetTime": 300,
     "serverTime": 1702345558901
   }
 }

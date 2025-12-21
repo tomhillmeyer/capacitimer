@@ -55,9 +55,10 @@ function App() {
     timeRemaining: 0,
     isRunning: false,
     isPaused: false,
-    lastSetTime: 0,
     endTime: null,
     pausedTimeRemaining: 0,
+    startTime: null,
+    resetTime: 0,
   });
   const [displayTime, setDisplayTime] = useState(0); // Calculated locally for smooth millisecond updates
   const [currentTime, setCurrentTime] = useState(new Date());
