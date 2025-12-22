@@ -88,11 +88,26 @@ cd "$TMP_DIR"
 
 # Download the .deb package
 echo "Downloading $DEB_FILENAME..."
-if ! curl -L -o "$DEB_FILENAME" "$DEB_URL"; then
+if ! curl -L -f -o "$DEB_FILENAME" "$DEB_URL"; then
     echo "Error: Failed to download .deb package"
+    echo "URL: $DEB_URL"
     exit 1
 fi
-echo "✓ Downloaded .deb package"
+
+# Verify the download is a valid .deb file
+if ! file "$DEB_FILENAME" | grep -q "Debian binary package"; then
+    echo "Error: Downloaded file is not a valid .deb package"
+    echo "File type: $(file "$DEB_FILENAME")"
+    echo "File size: $(wc -c < "$DEB_FILENAME") bytes"
+    echo ""
+    echo "This might be due to:"
+    echo "  • GitHub rate limiting or service issues (try again in a few minutes)"
+    echo "  • Network connectivity problems"
+    echo "  • The release asset not being properly uploaded"
+    exit 1
+fi
+
+echo "✓ Downloaded .deb package ($(wc -c < "$DEB_FILENAME") bytes)"
 
 # Download the installation script
 echo "Downloading installation script..."
