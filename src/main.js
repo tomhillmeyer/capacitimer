@@ -193,16 +193,19 @@ function createWindow() {
   mainWindow.webContents.on('did-finish-load', () => {
     const prefs = loadDisplayPrefs();
     if (prefs && prefs.isFullscreen && prefs.displayId) {
-      const displays = screen.getAllDisplays();
-      const targetDisplay = displays.find(d => d.id === prefs.displayId);
+      // Wait 500ms to ensure React app and WebSocket are initialized
+      setTimeout(() => {
+        const displays = screen.getAllDisplays();
+        const targetDisplay = displays.find(d => d.id === prefs.displayId);
 
-      if (targetDisplay) {
-        const bounds = targetDisplay.bounds;
-        mainWindow.setBounds(bounds);
-        mainWindow.setFullScreen(true);
-        currentFullscreenDisplay = prefs.displayId;
-        updateTrayMenu();
-      }
+        if (targetDisplay) {
+          const bounds = targetDisplay.bounds;
+          mainWindow.setBounds(bounds);
+          mainWindow.setFullScreen(true);
+          currentFullscreenDisplay = prefs.displayId;
+          updateTrayMenu();
+        }
+      }, 500);
     }
   });
 
