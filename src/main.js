@@ -309,89 +309,131 @@ function updateTrayMenu() {
           // Exit fullscreen
           mainWindow.setFullScreen(false);
           currentFullscreenDisplay = null;
-          saveDisplayPrefs();
-          updateTrayMenu();
+
+          const isWindows = process.platform === 'win32';
+          const delay = isWindows ? 500 : 0;
+          setTimeout(() => {
+            saveDisplayPrefs();
+            updateTrayMenu();
+          }, delay);
         } else {
           // Enter fullscreen on selected display
           const bounds = display.bounds;
           const targetDisplayId = display.id;
+          const isWindows = process.platform === 'win32';
 
-          console.log(`[Tray Menu] Switching to display ${targetDisplayId}`);
+          console.log(`[Tray Menu] Switching to display ${targetDisplayId}, platform=${process.platform}`);
 
           // Set the display immediately (optimistically) to prevent race conditions
           currentFullscreenDisplay = targetDisplayId;
 
-          // If already fullscreen, exit first and wait for transition
-          if (mainWindow.isFullScreen()) {
-            console.log('[Tray Menu] Exiting current fullscreen first...');
-            mainWindow.setFullScreen(false);
+          if (isWindows) {
+            // Windows-specific handling
+            if (mainWindow.isFullScreen()) {
+              console.log('[Tray Menu] [Windows] Exiting current fullscreen first...');
+              mainWindow.setFullScreen(false);
 
-            mainWindow.once('leave-full-screen', () => {
-              console.log('[Tray Menu] Left fullscreen, waiting before moving...');
-
-              // Wait a bit for macOS to fully process the fullscreen exit
               setTimeout(() => {
-                console.log('[Tray Menu] Moving to new display bounds:', JSON.stringify(bounds));
-                const currentBounds = mainWindow.getBounds();
+                console.log('[Tray Menu] [Windows] Setting bounds to target display:', JSON.stringify(bounds));
+                mainWindow.setBounds(bounds);
 
-                // Ensure window is shown and focused
-                if (!mainWindow.isVisible()) {
-                  mainWindow.show();
-                }
-
-                // Calculate center position of target display to ensure we land on it
-                const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
-                const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
-
-                console.log('[Tray Menu] Moving window to center of target display:', centerX, centerY);
-
-                // Move to center of target display first (no animation)
-                mainWindow.setPosition(centerX, centerY, false);
-
-                // Wait a moment for the position to update
                 setTimeout(() => {
-                  // Now set to full bounds of display
-                  mainWindow.setBounds(bounds);
+                  console.log('[Tray Menu] [Windows] Entering fullscreen');
+                  mainWindow.setFullScreen(true);
 
-                  // Longer delay to ensure window has moved to new display
                   setTimeout(() => {
-                    console.log('[Tray Menu] Entering fullscreen on new display');
-                    mainWindow.setFullScreen(true);
                     saveDisplayPrefs();
                     updateTrayMenu();
                   }, 300);
-                }, 100);
-              }, 200); // Wait 200ms after leaving fullscreen before moving
-            });
-          } else {
-            // Not fullscreen, just move and enter fullscreen
-            console.log('[Tray Menu] Not fullscreen, moving and entering');
-            const currentBounds = mainWindow.getBounds();
-
-            // Ensure window is shown and focused
-            if (!mainWindow.isVisible()) {
-              mainWindow.show();
-            }
-
-            // Calculate center position of target display to ensure we land on it
-            const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
-            const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
-
-            console.log('[Tray Menu] Moving window to center of target display:', centerX, centerY);
-
-            // Move to center of target display first (no animation)
-            mainWindow.setPosition(centerX, centerY, false);
-
-            setTimeout(() => {
-              // Now set to full bounds of display
+                }, 500);
+              }, 500);
+            } else {
+              console.log('[Tray Menu] [Windows] Not fullscreen, setting bounds and entering');
               mainWindow.setBounds(bounds);
 
               setTimeout(() => {
+                console.log('[Tray Menu] [Windows] Entering fullscreen');
                 mainWindow.setFullScreen(true);
-                saveDisplayPrefs();
-                updateTrayMenu();
-              }, 300);
-            }, 100);
+
+                setTimeout(() => {
+                  saveDisplayPrefs();
+                  updateTrayMenu();
+                }, 300);
+              }, 500);
+            }
+          } else {
+            // macOS-specific handling: two-step positioning with event-driven callbacks
+            if (mainWindow.isFullScreen()) {
+              console.log('[Tray Menu] [macOS] Exiting current fullscreen first...');
+              mainWindow.setFullScreen(false);
+
+              mainWindow.once('leave-full-screen', () => {
+                console.log('[Tray Menu] [macOS] Left fullscreen, waiting before moving...');
+
+                // Wait a bit for macOS to fully process the fullscreen exit
+                setTimeout(() => {
+                  console.log('[Tray Menu] [macOS] Moving to new display bounds:', JSON.stringify(bounds));
+                  const currentBounds = mainWindow.getBounds();
+
+                  // Ensure window is shown and focused
+                  if (!mainWindow.isVisible()) {
+                    mainWindow.show();
+                  }
+
+                  // Calculate center position of target display to ensure we land on it
+                  const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
+                  const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+
+                  console.log('[Tray Menu] [macOS] Moving window to center of target display:', centerX, centerY);
+
+                  // Move to center of target display first (no animation)
+                  mainWindow.setPosition(centerX, centerY, false);
+
+                  // Wait a moment for the position to update
+                  setTimeout(() => {
+                    // Now set to full bounds of display
+                    mainWindow.setBounds(bounds);
+
+                    // Longer delay to ensure window has moved to new display
+                    setTimeout(() => {
+                      console.log('[Tray Menu] [macOS] Entering fullscreen on new display');
+                      mainWindow.setFullScreen(true);
+                      saveDisplayPrefs();
+                      updateTrayMenu();
+                    }, 300);
+                  }, 100);
+                }, 200); // Wait 200ms after leaving fullscreen before moving
+              });
+            } else {
+              // Not fullscreen, just move and enter fullscreen
+              console.log('[Tray Menu] [macOS] Not fullscreen, moving and entering');
+              const currentBounds = mainWindow.getBounds();
+
+              // Ensure window is shown and focused
+              if (!mainWindow.isVisible()) {
+                mainWindow.show();
+              }
+
+              // Calculate center position of target display to ensure we land on it
+              const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
+              const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+
+              console.log('[Tray Menu] [macOS] Moving window to center of target display:', centerX, centerY);
+
+              // Move to center of target display first (no animation)
+              mainWindow.setPosition(centerX, centerY, false);
+
+              setTimeout(() => {
+                // Now set to full bounds of display
+                mainWindow.setBounds(bounds);
+
+                setTimeout(() => {
+                  mainWindow.setFullScreen(true);
+                  saveDisplayPrefs();
+                  updateTrayMenu();
+                }, 300);
+              }, 100);
+            }
           }
         }
       }
@@ -547,8 +589,13 @@ function startWebServer() {
     res.json({ success: true, presets: customPresets });
   });
 
-  // Display endpoints (for Electron app only)
+  // Display endpoints (for Electron app only, disabled on Linux)
   expressApp.get('/api/displays', (req, res) => {
+    // Don't expose display controls on Linux (kiosk mode)
+    if (process.platform === 'linux') {
+      return res.json({ displays: null });
+    }
+
     const displays = screen.getAllDisplays();
 
     res.json({
@@ -565,6 +612,11 @@ function startWebServer() {
 
   // Lightweight endpoint just for current display state (no logging)
   expressApp.get('/api/displays/state', (req, res) => {
+    // Don't expose display controls on Linux (kiosk mode)
+    if (process.platform === 'linux') {
+      return res.json({ displays: null });
+    }
+
     res.json({
       currentDisplayId: currentFullscreenDisplay,
       isFullscreen: mainWindow ? mainWindow.isFullScreen() : false
@@ -578,15 +630,21 @@ function startWebServer() {
       return res.json({ success: false, error: 'No main window' });
     }
 
-    console.log(`[Display API] Request: displayId=${displayId}, currentFullscreen=${mainWindow.isFullScreen()}, currentDisplay=${currentFullscreenDisplay}`);
+    const isWindows = process.platform === 'win32';
+    console.log(`[Display API] Request: displayId=${displayId}, currentFullscreen=${mainWindow.isFullScreen()}, currentDisplay=${currentFullscreenDisplay}, platform=${process.platform}`);
 
     if (displayId === null) {
       // Exit fullscreen (windowed mode)
       console.log('[Display API] Exiting fullscreen (windowed mode)');
       currentFullscreenDisplay = null; // Set immediately
       mainWindow.setFullScreen(false);
-      saveDisplayPrefs();
-      updateTrayMenu();
+
+      // Windows needs a longer delay to fully exit fullscreen
+      const delay = isWindows ? 500 : 0;
+      setTimeout(() => {
+        saveDisplayPrefs();
+        updateTrayMenu();
+      }, delay);
 
       return res.json({
         success: true,
@@ -613,104 +671,143 @@ function startWebServer() {
       currentFullscreenDisplay = displayId;
       console.log('[Display API] Set currentFullscreenDisplay optimistically to:', displayId);
 
-      // If already fullscreen, exit first
-      if (wasFullscreen) {
-        console.log('[Display API] Exiting current fullscreen first...');
-        mainWindow.setFullScreen(false);
+      if (isWindows) {
+        // Windows-specific handling: simpler approach with longer delays
+        if (wasFullscreen) {
+          console.log('[Display API] [Windows] Exiting current fullscreen first...');
+          mainWindow.setFullScreen(false);
 
-        // Wait for fullscreen transition to complete before moving and re-entering
-        mainWindow.once('leave-full-screen', () => {
-          console.log('[Display API] Left fullscreen, waiting before moving...');
-
-          // Wait a bit for macOS to fully process the fullscreen exit
+          // Windows needs longer delay after exiting fullscreen
           setTimeout(() => {
-            console.log('[Display API] Moving to new display bounds:', JSON.stringify(bounds));
-            const currentBounds = mainWindow.getBounds();
-            console.log('[Display API] Current window bounds before move:', JSON.stringify(currentBounds));
+            console.log('[Display API] [Windows] Setting bounds to target display:', JSON.stringify(bounds));
+            mainWindow.setBounds(bounds);
 
-            // Ensure window is shown and focused
-            if (!mainWindow.isVisible()) {
-              mainWindow.show();
-            }
-
-            // Calculate center position of target display to ensure we land on it
-            const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
-            const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
-
-            console.log('[Display API] Moving window to center of target display:', centerX, centerY);
-
-            // Move to center of target display first (no animation for large jumps)
-            mainWindow.setPosition(centerX, centerY, false);
-
-            // Wait a moment for the position to update
+            // Longer delay before entering fullscreen on Windows
             setTimeout(() => {
-              const afterCenterBounds = mainWindow.getBounds();
-              console.log('[Display API] Window position after centering:', JSON.stringify(afterCenterBounds));
+              console.log('[Display API] [Windows] Entering fullscreen');
+              mainWindow.setFullScreen(true);
 
-              // Now set to full bounds of display
-              mainWindow.setBounds(bounds);
-
-              const newBounds = mainWindow.getBounds();
-              console.log('[Display API] New window bounds after full bounds set:', JSON.stringify(newBounds));
-
-              // Longer delay to ensure window has moved to new display
               setTimeout(() => {
-                console.log('[Display API] Entering fullscreen on new display');
-                mainWindow.setFullScreen(true);
-
-                // Wait for enter-full-screen event to confirm
-                mainWindow.once('enter-full-screen', () => {
-                  console.log('[Display API] Entered fullscreen successfully on display', displayId);
-                  saveDisplayPrefs();
-                  updateTrayMenu();
-                });
+                saveDisplayPrefs();
+                updateTrayMenu();
               }, 300);
-            }, 100);
-          }, 200); // Wait 200ms after leaving fullscreen before moving
-        });
-      } else {
-        // Not fullscreen, just move and enter fullscreen
-        console.log('[Display API] Not fullscreen, moving and entering');
-        const currentBounds = mainWindow.getBounds();
-        console.log('[Display API] Current window bounds before move:', JSON.stringify(currentBounds));
-
-        // Ensure window is shown and focused
-        if (!mainWindow.isVisible()) {
-          mainWindow.show();
-        }
-
-        // Calculate center position of target display to ensure we land on it
-        const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
-        const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
-
-        console.log('[Display API] Moving window to center of target display:', centerX, centerY);
-
-        // Move to center of target display first (no animation)
-        mainWindow.setPosition(centerX, centerY, false);
-
-        setTimeout(() => {
-          const afterCenterBounds = mainWindow.getBounds();
-          console.log('[Display API] Window position after centering:', JSON.stringify(afterCenterBounds));
-
-          // Now set to full bounds of display
+            }, 500);
+          }, 500);
+        } else {
+          // Not fullscreen, just move and enter fullscreen
+          console.log('[Display API] [Windows] Not fullscreen, setting bounds and entering');
           mainWindow.setBounds(bounds);
 
-          const newBounds = mainWindow.getBounds();
-          console.log('[Display API] New window bounds after full bounds set:', JSON.stringify(newBounds));
-
-          // Longer delay to ensure window has moved to new display
           setTimeout(() => {
-            console.log('[Display API] Entering fullscreen');
+            console.log('[Display API] [Windows] Entering fullscreen');
             mainWindow.setFullScreen(true);
 
-            // Wait for enter-full-screen event to confirm
-            mainWindow.once('enter-full-screen', () => {
-              console.log('[Display API] Entered fullscreen successfully on display', displayId);
+            setTimeout(() => {
               saveDisplayPrefs();
               updateTrayMenu();
-            });
-          }, 300);
-        }, 100);
+            }, 300);
+          }, 500);
+        }
+      } else {
+        // macOS-specific handling: two-step positioning with event-driven callbacks
+        if (wasFullscreen) {
+          console.log('[Display API] [macOS] Exiting current fullscreen first...');
+          mainWindow.setFullScreen(false);
+
+          // Wait for fullscreen transition to complete before moving and re-entering
+          mainWindow.once('leave-full-screen', () => {
+            console.log('[Display API] [macOS] Left fullscreen, waiting before moving...');
+
+            // Wait a bit for macOS to fully process the fullscreen exit
+            setTimeout(() => {
+              console.log('[Display API] [macOS] Moving to new display bounds:', JSON.stringify(bounds));
+              const currentBounds = mainWindow.getBounds();
+              console.log('[Display API] [macOS] Current window bounds before move:', JSON.stringify(currentBounds));
+
+              // Ensure window is shown and focused
+              if (!mainWindow.isVisible()) {
+                mainWindow.show();
+              }
+
+              // Calculate center position of target display to ensure we land on it
+              const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
+              const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+
+              console.log('[Display API] [macOS] Moving window to center of target display:', centerX, centerY);
+
+              // Move to center of target display first (no animation for large jumps)
+              mainWindow.setPosition(centerX, centerY, false);
+
+              // Wait a moment for the position to update
+              setTimeout(() => {
+                const afterCenterBounds = mainWindow.getBounds();
+                console.log('[Display API] [macOS] Window position after centering:', JSON.stringify(afterCenterBounds));
+
+                // Now set to full bounds of display
+                mainWindow.setBounds(bounds);
+
+                const newBounds = mainWindow.getBounds();
+                console.log('[Display API] [macOS] New window bounds after full bounds set:', JSON.stringify(newBounds));
+
+                // Longer delay to ensure window has moved to new display
+                setTimeout(() => {
+                  console.log('[Display API] [macOS] Entering fullscreen on new display');
+                  mainWindow.setFullScreen(true);
+
+                  // Wait for enter-full-screen event to confirm
+                  mainWindow.once('enter-full-screen', () => {
+                    console.log('[Display API] [macOS] Entered fullscreen successfully on display', displayId);
+                    saveDisplayPrefs();
+                    updateTrayMenu();
+                  });
+                }, 300);
+              }, 100);
+            }, 200); // Wait 200ms after leaving fullscreen before moving
+          });
+        } else {
+          // Not fullscreen, just move and enter fullscreen
+          console.log('[Display API] [macOS] Not fullscreen, moving and entering');
+          const currentBounds = mainWindow.getBounds();
+          console.log('[Display API] [macOS] Current window bounds before move:', JSON.stringify(currentBounds));
+
+          // Ensure window is shown and focused
+          if (!mainWindow.isVisible()) {
+            mainWindow.show();
+          }
+
+          // Calculate center position of target display to ensure we land on it
+          const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
+          const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+
+          console.log('[Display API] [macOS] Moving window to center of target display:', centerX, centerY);
+
+          // Move to center of target display first (no animation)
+          mainWindow.setPosition(centerX, centerY, false);
+
+          setTimeout(() => {
+            const afterCenterBounds = mainWindow.getBounds();
+            console.log('[Display API] [macOS] Window position after centering:', JSON.stringify(afterCenterBounds));
+
+            // Now set to full bounds of display
+            mainWindow.setBounds(bounds);
+
+            const newBounds = mainWindow.getBounds();
+            console.log('[Display API] [macOS] New window bounds after full bounds set:', JSON.stringify(newBounds));
+
+            // Longer delay to ensure window has moved to new display
+            setTimeout(() => {
+              console.log('[Display API] [macOS] Entering fullscreen');
+              mainWindow.setFullScreen(true);
+
+              // Wait for enter-full-screen event to confirm
+              mainWindow.once('enter-full-screen', () => {
+                console.log('[Display API] [macOS] Entered fullscreen successfully on display', displayId);
+                saveDisplayPrefs();
+                updateTrayMenu();
+              });
+            }, 300);
+          }, 100);
+        }
       }
 
       // Return success immediately (actual operation happens async)
