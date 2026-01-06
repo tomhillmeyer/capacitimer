@@ -38,6 +38,99 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 1rem;
+        }
+
+        .header-info {
+            cursor: pointer;
+            user-select: none;
+            min-width: 200px;
+            /* Ensure consistent width */
+        }
+
+        .header-info img {
+            display: block;
+        }
+
+        .header-meta {
+            display: none;
+        }
+
+        .header-info.show-meta img {
+            display: none;
+        }
+
+        .header-info.show-meta .header-meta {
+            display: block;
+        }
+
+        .display-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .header .refresh-displays-btn,
+        .column-header .refresh-displays-btn {
+            background: #262626;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 0 0 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            min-width: 48px;
+            max-width: 48px;
+            height: 48px;
+            box-sizing: border-box;
+        }
+
+        .header .refresh-displays-btn:hover,
+        .column-header .refresh-displays-btn:hover {
+            background: #333;
+        }
+
+        .refresh-displays-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .display-selector {
+            flex: 1;
+            padding: 0.75rem;
+            background: #262626;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Jura', system-ui, -apple-system, sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
+        }
+
+        .display-selector:hover {
+            background: #333;
+        }
+
+        .display-selector:focus {
+            outline: none;
+            border-color: #4488ff;
+        }
+
+        .display-selector option {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
         }
 
         .header img {
@@ -76,20 +169,42 @@
             }
         }
 
-        .settings-btn {
+        .header .settings-btn,
+        .column-header .settings-btn {
             background: #262626;
             color: #fff;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-            font-weight: bold;
+            border: 1px solid #444;
+            padding: 0;
+            border-radius: 8px;
             cursor: pointer;
+            font-family: 'Jura', system-ui, -apple-system, sans-serif;
+            font-size: 1rem;
             transition: all 0.2s;
-            max-width: 150px;
+            flex: 0 0 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            min-width: 48px;
+            max-width: 48px;
+            height: 48px;
+            box-sizing: border-box;
         }
 
-        .settings-btn:hover {
-            opacity: .8;
+        .header .settings-btn:hover,
+        .column-header .settings-btn:hover {
+            background: #333;
+        }
+
+        .header .settings-btn:active,
+        .column-header .settings-btn:active {
+            background: #1a1a1a;
+        }
+
+        .header .settings-btn img,
+        .column-header .settings-btn img {
+            width: 20px;
+            height: 20px;
         }
 
         /* Modal styles */
@@ -377,6 +492,7 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                gap: 1rem;
                 padding: 1rem 2rem 1rem 2rem;
                 position: sticky;
                 top: 0;
@@ -694,15 +810,27 @@
 
 <body>
     <div class="header">
-        <div class="header-info">
+        <div class="header-info" onclick="toggleHeaderInfo()">
             <img src="/capacitimer-wordmark.png" alt="Capacitimer">
             <div class="header-meta">
-                <div>v1.2.1</div>
+                <div>v1.2.2</div>
                 <div>Created by Tom Hillmeyer</div>
             </div>
         </div>
-        <button class="settings-btn" onclick="toggleSettings()"><img src="/icons/gear.svg" alt="Settings"
-                style="height: 1.2em; vertical-align: middle;"></button>
+        <div class="display-controls">
+            <select class="display-selector" id="displaySelector" onchange="changeDisplay(event)">
+                <option value="">Loading displays...</option>
+            </select>
+            <button class="refresh-displays-btn" onclick="refreshDisplays()" title="Refresh displays">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                </svg>
+            </button>
+        </div>
+        <button class="settings-btn" onclick="toggleSettings()">
+            <img src="/icons/gear.svg" alt="Settings">
+        </button>
     </div>
 
     <div class="main-layout">
@@ -711,15 +839,29 @@
             <div class="column left-column">
                 <!-- Header (only visible in desktop two-column view) -->
                 <div class="column-header">
-                    <div class="header-info">
+                    <div class="header-info" onclick="toggleHeaderInfo()">
                         <img src="/capacitimer-wordmark.png" alt="Capacitimer">
                         <div class="header-meta">
-                            <div>v1.2.1</div>
+                            <div>v1.2.2</div>
                             <div>Created by Tom Hillmeyer</div>
                         </div>
                     </div>
-                    <button class="settings-btn" onclick="toggleSettings()"><img src="/icons/gear.svg" alt="Settings"
-                            style="height: 1.2em; vertical-align: middle;"></button>
+                    <div class="display-controls">
+                        <select class="display-selector" id="displaySelectorDesktop" onchange="changeDisplay(event)">
+                            <option value="">Loading displays...</option>
+                        </select>
+                        <button class="refresh-displays-btn" onclick="refreshDisplays()" title="Refresh displays">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path
+                                    d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="settings-btn" onclick="toggleSettings()">
+                        <img src="/icons/gear.svg" alt="Settings">
+                    </button>
                 </div>
 
                 <div class="section">
@@ -817,7 +959,7 @@
         <!-- Connection Lost Overlay -->
         <div class="connection-overlay" id="connectionOverlay">
             <h2>Connection Lost</h2>
-            <p>Attempting to reconnect to server...</p>
+            <p>Attempting to reconnect to Capacitimer</p>
             <div class="spinner"></div>
         </div>
 
@@ -2076,6 +2218,169 @@
 
             // Initialize preset buttons on load
             renderPresetButtons();
+
+            // ===== Display Selector (for Electron app) =====
+            let currentDisplayState = null;
+            let isChangingDisplay = false; // Flag to prevent poll interference
+
+            async function loadDisplays() {
+                try {
+                    const response = await fetch('/api/displays');
+                    const data = await response.json();
+
+                    if (!data || !data.displays) {
+                        // Not in Electron or API not available, hide the dropdown
+                        document.getElementById('displaySelector').style.display = 'none';
+                        document.getElementById('displaySelectorDesktop').style.display = 'none';
+                        return;
+                    }
+
+                    currentDisplayState = data;
+                    updateDisplaySelector();
+                } catch (error) {
+                    console.log('Display API not available (not in Electron app)');
+                    // Hide the dropdown if API is not available
+                    document.getElementById('displaySelector').style.display = 'none';
+                    document.getElementById('displaySelectorDesktop').style.display = 'none';
+                }
+            }
+
+            function updateDisplaySelector() {
+                if (!currentDisplayState || !currentDisplayState.displays) return;
+
+                const selectors = [
+                    document.getElementById('displaySelector'),
+                    document.getElementById('displaySelectorDesktop')
+                ];
+
+                selectors.forEach(selector => {
+                    if (!selector) return;
+
+                    selector.innerHTML = '';
+
+                    // Add "Windowed" option
+                    const windowedOption = document.createElement('option');
+                    windowedOption.value = 'windowed';
+                    windowedOption.textContent = 'Windowed';
+                    selector.appendChild(windowedOption);
+
+                    // Add display options
+                    currentDisplayState.displays.forEach((display, index) => {
+                        const option = document.createElement('option');
+                        option.value = display.id;
+                        // Show just the display label or "Display ID" if no label
+                        const displayName = display.label || `Display ${display.id}`;
+                        option.textContent = displayName;
+                        selector.appendChild(option);
+                    });
+
+                    // Set current value
+                    if (!currentDisplayState.isFullscreen) {
+                        selector.value = 'windowed';
+                    } else if (currentDisplayState.currentDisplayId) {
+                        selector.value = currentDisplayState.currentDisplayId;
+                    }
+                });
+            }
+
+            async function changeDisplay(event) {
+                const selector = document.getElementById('displaySelector');
+                const desktopSelector = document.getElementById('displaySelectorDesktop');
+
+                // Get value from whichever dropdown triggered the change
+                let value;
+                if (event && event.target) {
+                    value = event.target.value;
+                } else {
+                    value = selector.value || desktopSelector.value;
+                }
+
+                console.log('[Control Page] changeDisplay called with value:', value);
+
+                // Sync both dropdowns
+                if (selector) selector.value = value;
+                if (desktopSelector) desktopSelector.value = value;
+
+                // Set flag to prevent polling from interfering
+                isChangingDisplay = true;
+
+                try {
+                    const displayId = value === 'windowed' ? null : parseInt(value);
+                    console.log('[Control Page] Requesting display change to:', displayId);
+
+                    const response = await fetch('/api/displays/set', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ displayId })
+                    });
+
+                    const result = await response.json();
+                    console.log('[Control Page] Display change result:', result);
+
+                    if (result.success) {
+                        // Update local state immediately
+                        currentDisplayState.currentDisplayId = result.currentDisplayId;
+                        currentDisplayState.isFullscreen = result.isFullscreen;
+
+                        // Wait for fullscreen transition to complete before re-enabling polling
+                        setTimeout(() => {
+                            isChangingDisplay = false;
+                            console.log('[Control Page] Re-enabled polling');
+                        }, 2000); // Give it 2 seconds for transition
+                    } else {
+                        console.error('[Control Page] Display change failed:', result.error);
+                        isChangingDisplay = false;
+                    }
+                } catch (error) {
+                    console.error('[Control Page] Failed to change display:', error);
+                    isChangingDisplay = false;
+                }
+            }
+
+            // Manual refresh function
+            async function refreshDisplays() {
+                console.log('[Control Page] Manually refreshing displays...');
+                await loadDisplays();
+            }
+
+            // Poll for display state changes (to sync with tray menu changes)
+            // Uses lightweight endpoint that doesn't log or fetch full display list
+            setInterval(async () => {
+                // Don't poll while we're actively changing displays
+                if (isChangingDisplay) return;
+
+                try {
+                    const response = await fetch('/api/displays/state');
+                    const data = await response.json();
+
+                    if (data && currentDisplayState) {
+                        // Check if the active display changed (from tray menu, keyboard shortcuts, etc.)
+                        const stateChanged =
+                            currentDisplayState.isFullscreen !== data.isFullscreen ||
+                            currentDisplayState.currentDisplayId !== data.currentDisplayId;
+
+                        if (stateChanged) {
+                            console.log('[Control Page] Display state changed externally, updating dropdown');
+                            currentDisplayState.isFullscreen = data.isFullscreen;
+                            currentDisplayState.currentDisplayId = data.currentDisplayId;
+                            updateDisplaySelector();
+                        }
+                    }
+                } catch (error) {
+                    // Silently fail - API might not be available
+                }
+            }, 1000);
+
+            // Load displays on page load
+            loadDisplays();
+
+            // ===== Header Info Toggle =====
+            function toggleHeaderInfo() {
+                const headerInfos = document.querySelectorAll('.header-info');
+                headerInfos.forEach(info => {
+                    info.classList.toggle('show-meta');
+                });
+            }
         </script>
 </body>
 

@@ -161,13 +161,24 @@ function createWindow() {
 
   // Listen for fullscreen changes to hide/show menu
   mainWindow.on('enter-full-screen', () => {
+    console.log('[Fullscreen Event] Entered fullscreen');
     mainWindow.setMenuBarVisibility(false);
   });
 
   mainWindow.on('leave-full-screen', () => {
+    console.log('[Fullscreen Event] Left fullscreen, currentDisplay =', currentFullscreenDisplay);
     mainWindow.setMenuBarVisibility(false);
-    currentFullscreenDisplay = null;
-    saveDisplayPrefs();
+    // Only clear currentFullscreenDisplay if we're actually exiting (not transitioning)
+    // If currentFullscreenDisplay is set, we're transitioning to that display
+    // If it's null, we're exiting to windowed mode
+    setTimeout(() => {
+      if (!mainWindow.isFullScreen() && currentFullscreenDisplay === null) {
+        console.log('[Fullscreen Event] Confirmed exit to windowed mode');
+        saveDisplayPrefs();
+      } else if (!mainWindow.isFullScreen() && currentFullscreenDisplay !== null) {
+        console.log('[Fullscreen Event] In transition, currentDisplay =', currentFullscreenDisplay);
+      }
+    }, 200);
   });
 
   // In development, load from vite dev server
@@ -267,6 +278,22 @@ function updateTrayMenu() {
 
   const menuItems = [];
 
+  // Add "Windowed (Not Fullscreen)" option
+  menuItems.push({
+    label: 'Windowed (Not Fullscreen)',
+    type: 'checkbox',
+    checked: !currentFullscreenDisplay && !mainWindow.isFullScreen(),
+    click: () => {
+      mainWindow.setFullScreen(false);
+      currentFullscreenDisplay = null;
+      saveDisplayPrefs();
+      updateTrayMenu();
+    }
+  });
+
+  // Add separator
+  menuItems.push({ type: 'separator' });
+
   // Add display items
   displays.forEach((display, index) => {
     const isCurrentDisplay = currentFullscreenDisplay === display.id;
@@ -274,22 +301,113 @@ function updateTrayMenu() {
       label: `Display ${index + 1}${display.label ? ` (${display.label})` : ''} - ${display.size.width}x${display.size.height}`,
       type: 'checkbox',
       checked: isCurrentDisplay,
-      click: () => {
+      click: async () => {
         if (isCurrentDisplay) {
           // Exit fullscreen
           mainWindow.setFullScreen(false);
           currentFullscreenDisplay = null;
+          saveDisplayPrefs();
+          updateTrayMenu();
         } else {
           // Enter fullscreen on selected display
           const bounds = display.bounds;
-          mainWindow.setBounds(bounds);
-          mainWindow.setFullScreen(true);
-          currentFullscreenDisplay = display.id;
+          const targetDisplayId = display.id;
+
+          console.log(`[Tray Menu] Switching to display ${targetDisplayId}`);
+
+          // Set the display immediately (optimistically) to prevent race conditions
+          currentFullscreenDisplay = targetDisplayId;
+
+          // If already fullscreen, exit first and wait for transition
+          if (mainWindow.isFullScreen()) {
+            console.log('[Tray Menu] Exiting current fullscreen first...');
+            mainWindow.setFullScreen(false);
+
+            mainWindow.once('leave-full-screen', () => {
+              console.log('[Tray Menu] Left fullscreen, waiting before moving...');
+
+              // Wait a bit for macOS to fully process the fullscreen exit
+              setTimeout(() => {
+                console.log('[Tray Menu] Moving to new display bounds:', JSON.stringify(bounds));
+                const currentBounds = mainWindow.getBounds();
+
+                // Ensure window is shown and focused
+                if (!mainWindow.isVisible()) {
+                  mainWindow.show();
+                }
+
+                // Calculate center position of target display to ensure we land on it
+                const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
+                const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+
+                console.log('[Tray Menu] Moving window to center of target display:', centerX, centerY);
+
+                // Move to center of target display first (no animation)
+                mainWindow.setPosition(centerX, centerY, false);
+
+                // Wait a moment for the position to update
+                setTimeout(() => {
+                  // Now set to full bounds of display
+                  mainWindow.setBounds(bounds);
+
+                  // Longer delay to ensure window has moved to new display
+                  setTimeout(() => {
+                    console.log('[Tray Menu] Entering fullscreen on new display');
+                    mainWindow.setFullScreen(true);
+                    saveDisplayPrefs();
+                    updateTrayMenu();
+                  }, 300);
+                }, 100);
+              }, 200); // Wait 200ms after leaving fullscreen before moving
+            });
+          } else {
+            // Not fullscreen, just move and enter fullscreen
+            console.log('[Tray Menu] Not fullscreen, moving and entering');
+            const currentBounds = mainWindow.getBounds();
+
+            // Ensure window is shown and focused
+            if (!mainWindow.isVisible()) {
+              mainWindow.show();
+            }
+
+            // Calculate center position of target display to ensure we land on it
+            const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
+            const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+
+            console.log('[Tray Menu] Moving window to center of target display:', centerX, centerY);
+
+            // Move to center of target display first (no animation)
+            mainWindow.setPosition(centerX, centerY, false);
+
+            setTimeout(() => {
+              // Now set to full bounds of display
+              mainWindow.setBounds(bounds);
+
+              setTimeout(() => {
+                mainWindow.setFullScreen(true);
+                saveDisplayPrefs();
+                updateTrayMenu();
+              }, 300);
+            }, 100);
+          }
         }
-        saveDisplayPrefs();
-        updateTrayMenu();
       }
     });
+  });
+
+  // Add separator and refresh displays option
+  menuItems.push({ type: 'separator' });
+  menuItems.push({
+    label: 'Refresh Displays',
+    click: () => {
+      console.log('[Tray Menu] Refreshing display list...');
+      const displays = screen.getAllDisplays();
+      console.log('[Tray Menu] Available displays:');
+      displays.forEach((d, i) => {
+        console.log(`  [${i}] ID=${d.id}, Label="${d.label || 'Unknown'}", Bounds=${JSON.stringify(d.bounds)}, Size=${d.size.width}x${d.size.height}`);
+      });
+      updateTrayMenu();
+    }
   });
 
   // Add separator before web links
@@ -426,6 +544,181 @@ function startWebServer() {
     res.json({ success: true, presets: customPresets });
   });
 
+  // Display endpoints (for Electron app only)
+  expressApp.get('/api/displays', (req, res) => {
+    const displays = screen.getAllDisplays();
+
+    res.json({
+      displays: displays.map((d, i) => ({
+        id: d.id,
+        label: d.label || `Display ${i + 1}`,
+        bounds: d.bounds,
+        size: d.size
+      })),
+      currentDisplayId: currentFullscreenDisplay,
+      isFullscreen: mainWindow ? mainWindow.isFullScreen() : false
+    });
+  });
+
+  // Lightweight endpoint just for current display state (no logging)
+  expressApp.get('/api/displays/state', (req, res) => {
+    res.json({
+      currentDisplayId: currentFullscreenDisplay,
+      isFullscreen: mainWindow ? mainWindow.isFullScreen() : false
+    });
+  });
+
+  expressApp.post('/api/displays/set', (req, res) => {
+    const { displayId } = req.body;
+
+    if (!mainWindow) {
+      return res.json({ success: false, error: 'No main window' });
+    }
+
+    console.log(`[Display API] Request: displayId=${displayId}, currentFullscreen=${mainWindow.isFullScreen()}, currentDisplay=${currentFullscreenDisplay}`);
+
+    if (displayId === null) {
+      // Exit fullscreen (windowed mode)
+      console.log('[Display API] Exiting fullscreen (windowed mode)');
+      currentFullscreenDisplay = null; // Set immediately
+      mainWindow.setFullScreen(false);
+      saveDisplayPrefs();
+      updateTrayMenu();
+
+      return res.json({
+        success: true,
+        currentDisplayId: null,
+        isFullscreen: false
+      });
+    } else {
+      // Enter fullscreen on selected display
+      const displays = screen.getAllDisplays();
+      const targetDisplay = displays.find(d => d.id === displayId);
+
+      if (!targetDisplay) {
+        console.log('[Display API] Display not found:', displayId);
+        return res.json({ success: false, error: 'Display not found' });
+      }
+
+      const bounds = targetDisplay.bounds;
+      const wasFullscreen = mainWindow.isFullScreen();
+
+      console.log(`[Display API] Switching to display ${displayId}, wasFullscreen=${wasFullscreen}`);
+      console.log(`[Display API] Target display info: ID=${targetDisplay.id}, Label="${targetDisplay.label || 'Unknown'}", Bounds=${JSON.stringify(bounds)}`);
+
+      // Set the display immediately (optimistically) to prevent race conditions
+      currentFullscreenDisplay = displayId;
+      console.log('[Display API] Set currentFullscreenDisplay optimistically to:', displayId);
+
+      // If already fullscreen, exit first
+      if (wasFullscreen) {
+        console.log('[Display API] Exiting current fullscreen first...');
+        mainWindow.setFullScreen(false);
+
+        // Wait for fullscreen transition to complete before moving and re-entering
+        mainWindow.once('leave-full-screen', () => {
+          console.log('[Display API] Left fullscreen, waiting before moving...');
+
+          // Wait a bit for macOS to fully process the fullscreen exit
+          setTimeout(() => {
+            console.log('[Display API] Moving to new display bounds:', JSON.stringify(bounds));
+            const currentBounds = mainWindow.getBounds();
+            console.log('[Display API] Current window bounds before move:', JSON.stringify(currentBounds));
+
+            // Ensure window is shown and focused
+            if (!mainWindow.isVisible()) {
+              mainWindow.show();
+            }
+
+            // Calculate center position of target display to ensure we land on it
+            const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
+            const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+
+            console.log('[Display API] Moving window to center of target display:', centerX, centerY);
+
+            // Move to center of target display first (no animation for large jumps)
+            mainWindow.setPosition(centerX, centerY, false);
+
+            // Wait a moment for the position to update
+            setTimeout(() => {
+              const afterCenterBounds = mainWindow.getBounds();
+              console.log('[Display API] Window position after centering:', JSON.stringify(afterCenterBounds));
+
+              // Now set to full bounds of display
+              mainWindow.setBounds(bounds);
+
+              const newBounds = mainWindow.getBounds();
+              console.log('[Display API] New window bounds after full bounds set:', JSON.stringify(newBounds));
+
+              // Longer delay to ensure window has moved to new display
+              setTimeout(() => {
+                console.log('[Display API] Entering fullscreen on new display');
+                mainWindow.setFullScreen(true);
+
+                // Wait for enter-full-screen event to confirm
+                mainWindow.once('enter-full-screen', () => {
+                  console.log('[Display API] Entered fullscreen successfully on display', displayId);
+                  saveDisplayPrefs();
+                  updateTrayMenu();
+                });
+              }, 300);
+            }, 100);
+          }, 200); // Wait 200ms after leaving fullscreen before moving
+        });
+      } else {
+        // Not fullscreen, just move and enter fullscreen
+        console.log('[Display API] Not fullscreen, moving and entering');
+        const currentBounds = mainWindow.getBounds();
+        console.log('[Display API] Current window bounds before move:', JSON.stringify(currentBounds));
+
+        // Ensure window is shown and focused
+        if (!mainWindow.isVisible()) {
+          mainWindow.show();
+        }
+
+        // Calculate center position of target display to ensure we land on it
+        const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
+        const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+
+        console.log('[Display API] Moving window to center of target display:', centerX, centerY);
+
+        // Move to center of target display first (no animation)
+        mainWindow.setPosition(centerX, centerY, false);
+
+        setTimeout(() => {
+          const afterCenterBounds = mainWindow.getBounds();
+          console.log('[Display API] Window position after centering:', JSON.stringify(afterCenterBounds));
+
+          // Now set to full bounds of display
+          mainWindow.setBounds(bounds);
+
+          const newBounds = mainWindow.getBounds();
+          console.log('[Display API] New window bounds after full bounds set:', JSON.stringify(newBounds));
+
+          // Longer delay to ensure window has moved to new display
+          setTimeout(() => {
+            console.log('[Display API] Entering fullscreen');
+            mainWindow.setFullScreen(true);
+
+            // Wait for enter-full-screen event to confirm
+            mainWindow.once('enter-full-screen', () => {
+              console.log('[Display API] Entered fullscreen successfully on display', displayId);
+              saveDisplayPrefs();
+              updateTrayMenu();
+            });
+          }, 300);
+        }, 100);
+      }
+
+      // Return success immediately (actual operation happens async)
+      return res.json({
+        success: true,
+        currentDisplayId: displayId,
+        isFullscreen: true
+      });
+    }
+  });
+
   // Try to start server on port 80, incrementing if unavailable
   function tryListen(port) {
     webServer = expressApp.listen(port)
@@ -453,6 +746,12 @@ function startWebServer() {
         if (tray) {
           updateTrayMenu();
         }
+
+        // Open control page in default browser
+        const portSuffix = port === 80 ? '' : `:${port}`;
+        const controlUrl = `http://localhost${portSuffix}/control`;
+        console.log(`Opening control page in browser: ${controlUrl}`);
+        shell.openExternal(controlUrl);
       })
       .on('error', (err) => {
         if (err.code === 'EACCES') {
@@ -775,6 +1074,73 @@ function setupIpcHandlers() {
   ipcMain.handle('adjust-timer', (_event, seconds) => {
     adjustTimer(seconds);
     return timerState;
+  });
+
+  // Display/fullscreen control
+  ipcMain.handle('get-displays', () => {
+    const displays = screen.getAllDisplays();
+    return {
+      displays: displays.map((d, i) => ({
+        id: d.id,
+        label: d.label || `Display ${i + 1}`,
+        bounds: d.bounds,
+        size: d.size
+      })),
+      currentDisplayId: currentFullscreenDisplay,
+      isFullscreen: mainWindow ? mainWindow.isFullScreen() : false
+    };
+  });
+
+  ipcMain.handle('set-fullscreen-display', async (_event, displayId) => {
+    if (!mainWindow) return { success: false };
+
+    if (displayId === null) {
+      // Exit fullscreen (windowed mode)
+      mainWindow.setFullScreen(false);
+      currentFullscreenDisplay = null;
+      saveDisplayPrefs();
+      updateTrayMenu();
+
+      return {
+        success: true,
+        currentDisplayId: currentFullscreenDisplay,
+        isFullscreen: mainWindow.isFullScreen()
+      };
+    } else {
+      // Enter fullscreen on selected display
+      const displays = screen.getAllDisplays();
+      const targetDisplay = displays.find(d => d.id === displayId);
+
+      if (!targetDisplay) {
+        return { success: false, error: 'Display not found' };
+      }
+
+      const bounds = targetDisplay.bounds;
+
+      // If already fullscreen, exit first and wait for transition
+      if (mainWindow.isFullScreen()) {
+        mainWindow.setFullScreen(false);
+        await new Promise(resolve => {
+          mainWindow.once('leave-full-screen', resolve);
+        });
+      }
+
+      // Move window to target display
+      mainWindow.setBounds(bounds);
+
+      // Wait a bit for bounds to be set, then enter fullscreen
+      await new Promise(resolve => setTimeout(resolve, 100));
+      mainWindow.setFullScreen(true);
+      currentFullscreenDisplay = displayId;
+      saveDisplayPrefs();
+      updateTrayMenu();
+
+      return {
+        success: true,
+        currentDisplayId: currentFullscreenDisplay,
+        isFullscreen: true
+      };
+    }
   });
 }
 
