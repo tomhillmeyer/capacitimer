@@ -87,11 +87,16 @@
     "afterSign": "./notarize.cjs",
     "win": {
       "target": [
-        "nsis",
-        "zip"
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
       ],
-      "icon": "assets/capacitimer.png",
-      "artifactName": "${productName}-${version}-windows-${arch}.${ext}"
+      "icon": "assets/capacitimer.png"
     },
     "linux": {
       "target": [
@@ -106,7 +111,11 @@
     "nsis": {
       "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-${version}-windows-${arch}-installer.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-windows-${arch}-portable.${ext}"
     }
   }
 }
