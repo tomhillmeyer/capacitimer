@@ -146,7 +146,12 @@ function createLauncherWindow() {
     autoHideMenuBar: true,
     title: 'Capacitimer',
     titleBarStyle: 'hidden',
-    ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
+    ...(process.platform !== 'darwin' ? {
+      titleBarOverlay: {
+        color: '#1a1a1a',
+        symbolColor: '#ffffff'
+      }
+    } : {}),
     icon: path.join(__dirname, '../assets/capacitimer.png'),
     backgroundColor: '#1a1a1a', // Match app background to prevent white flash
     show: false, // Don't show until ready
@@ -220,7 +225,12 @@ function createDisplayWindow() {
     height: 1080,
     fullscreen: isFullscreen,
     titleBarStyle: 'hidden',
-    ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
+    ...(process.platform !== 'darwin' ? {
+      titleBarOverlay: {
+        color: '#000000',
+        symbolColor: '#ffffff'
+      }
+    } : {}),
     autoHideMenuBar: true,
     fullscreenable: true,
     title: 'Capacitimer',
@@ -307,11 +317,12 @@ function createDisplayWindow() {
   });
 
   // Handle escape key to exit fullscreen
-  mainWindow.webContents.on('before-input-event', (event, input) => {
+  mainWindow.webContents.on('before-input-event', (_event, input) => {
     if (input.key === 'Escape' && mainWindow.isFullScreen()) {
       mainWindow.setFullScreen(false);
       currentFullscreenDisplay = null;
       saveDisplayPrefs();
+      updateTrayMenu();
     }
   });
 
@@ -325,7 +336,12 @@ function createControlWindow() {
   const controlWindow = new BrowserWindow({
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
-    ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
+    ...(process.platform !== 'darwin' ? {
+      titleBarOverlay: {
+        color: '#1a1a1a',
+        symbolColor: '#ffffff'
+      }
+    } : {}),
     title: 'Capacitimer',
     icon: path.join(__dirname, '../assets/capacitimer.png'),
     backgroundColor: '#1a1a1a', // Match app background to prevent white flash
@@ -807,7 +823,8 @@ function startWebServer() {
       })),
       currentDisplayId: currentFullscreenDisplay,
       isFullscreen: mainWindow ? mainWindow.isFullScreen() : false,
-      noOutput: !mainWindow
+      noOutput: !mainWindow,
+      platform: process.platform
     });
   });
 
@@ -1040,7 +1057,7 @@ function startWebServer() {
 
   // Try to start server on port 80, incrementing if unavailable
   function tryListen(port) {
-    webServer = expressApp.listen(port)
+    webServer = expressApp.listen(port, '0.0.0.0')
       .on('listening', () => {
         webServerPort = port;
         console.log(`Web server running on http://localhost:${port}`);
@@ -1082,7 +1099,7 @@ function startWebServer() {
   tryListen(80);
 
   // Start WebSocket server
-  wss = new WebSocketServer({ port: WS_PORT });
+  wss = new WebSocketServer({ port: WS_PORT, host: '0.0.0.0' });
 
   wss.on('connection', (ws) => {
     console.log('WebSocket client connected');
