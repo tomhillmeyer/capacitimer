@@ -148,17 +148,27 @@ function createLauncherWindow() {
     titleBarStyle: 'hidden',
     ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
     icon: path.join(__dirname, '../assets/capacitimer.png'),
+    backgroundColor: '#1a1a1a', // Match app background to prevent white flash
+    show: false, // Don't show until ready
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
 
+  // Show window once content is loaded
+  launcherWindow.once('ready-to-show', () => {
+    launcherWindow.show();
+  });
+
   // Wait for web server to be ready before loading launcher
   const loadLauncher = () => {
-    if (webServerPort) {
+    if (webServerPort && launcherWindow && !launcherWindow.isDestroyed()) {
       const portSuffix = webServerPort === 80 ? '' : `:${webServerPort}`;
+      console.log(`[Launcher] Loading launcher from: http://localhost${portSuffix}/launcher`);
       launcherWindow.loadURL(`http://localhost${portSuffix}/launcher`);
+    } else if (!launcherWindow || launcherWindow.isDestroyed()) {
+      console.log('[Launcher] Window was destroyed, aborting load');
     } else {
       setTimeout(loadLauncher, 100);
     }
@@ -182,6 +192,20 @@ function createLauncherWindow() {
     `);
   });
 
+  // Handle load errors
+  launcherWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error(`[Launcher] Failed to load ${validatedURL}: ${errorDescription} (${errorCode})`);
+    // Retry after a delay if the server isn't ready yet
+    if (errorCode === -102) { // ERR_CONNECTION_REFUSED
+      console.log('[Launcher] Connection refused, will retry in 500ms...');
+      setTimeout(() => {
+        if (launcherWindow && !launcherWindow.isDestroyed()) {
+          loadLauncher();
+        }
+      }, 500);
+    }
+  });
+
   launcherWindow.on('closed', () => {
     launcherWindow = null;
   });
@@ -201,11 +225,18 @@ function createDisplayWindow() {
     fullscreenable: true,
     title: 'Capacitimer',
     icon: path.join(__dirname, '../assets/capacitimer.png'),
+    backgroundColor: '#000000', // Black background for display window
+    show: false, // Don't show until ready
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
     },
+  });
+
+  // Show window once content is loaded
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
   });
 
   // Hide menu bar in fullscreen mode
@@ -297,14 +328,19 @@ function createControlWindow() {
     ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
     title: 'Capacitimer',
     icon: path.join(__dirname, '../assets/capacitimer.png'),
+    backgroundColor: '#1a1a1a', // Match app background to prevent white flash
+    show: false, // Don't show until ready
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
 
-  // Maximize the window to fill the screen (but not fullscreen)
-  controlWindow.maximize();
+  // Show window once content is loaded to prevent white flash
+  controlWindow.once('ready-to-show', () => {
+    controlWindow.maximize();
+    controlWindow.show();
+  });
 
   // Wait for web server to be ready before loading control page
   const loadControl = () => {
@@ -1460,6 +1496,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+  // Quit the app when all windows are closed (on all platforms)
   if (bonjourService) {
     bonjourService.stop();
   }
@@ -1469,7 +1506,5 @@ app.on('window-all-closed', () => {
   if (wss) {
     wss.close();
   }
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  app.quit();
 });
