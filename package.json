@@ -6,7 +6,7 @@
   },
   "description": "Speaker timer with full-screen display and web-based control",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.3.0",
   "type": "module",
   "main": "src/main.js",
   "scripts": {

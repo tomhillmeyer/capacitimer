@@ -813,7 +813,7 @@
         <div class="header-info" onclick="toggleHeaderInfo()">
             <img src="/capacitimer-wordmark.png" alt="Capacitimer">
             <div class="header-meta">
-                <div>v1.2.2</div>
+                <div>v1.3.0</div>
                 <div>Created by Tom Hillmeyer</div>
             </div>
         </div>
@@ -842,7 +842,7 @@
                     <div class="header-info" onclick="toggleHeaderInfo()">
                         <img src="/capacitimer-wordmark.png" alt="Capacitimer">
                         <div class="header-meta">
-                            <div>v1.2.2</div>
+                            <div>v1.3.0</div>
                             <div>Created by Tom Hillmeyer</div>
                         </div>
                     </div>
@@ -2258,6 +2258,12 @@
 
                     selector.innerHTML = '';
 
+                    // Add "No Output" option
+                    const noOutputOption = document.createElement('option');
+                    noOutputOption.value = 'none';
+                    noOutputOption.textContent = 'No Output';
+                    selector.appendChild(noOutputOption);
+
                     // Add "Windowed" option
                     const windowedOption = document.createElement('option');
                     windowedOption.value = 'windowed';
@@ -2274,8 +2280,14 @@
                         selector.appendChild(option);
                     });
 
-                    // Set current value
-                    if (!currentDisplayState.isFullscreen) {
+                    // Set current value - check if noOutput flag is set
+                    if (currentDisplayState.noOutput) {
+                        selector.value = 'none';
+                    } else if (!currentDisplayState.isFullscreen && !currentDisplayState.currentDisplayId) {
+                        // Check if mainWindow exists by seeing if we have any display state
+                        // If we just loaded and there's no state, assume no output
+                        selector.value = 'none';
+                    } else if (!currentDisplayState.isFullscreen) {
                         selector.value = 'windowed';
                     } else if (currentDisplayState.currentDisplayId) {
                         selector.value = currentDisplayState.currentDisplayId;
@@ -2305,7 +2317,15 @@
                 isChangingDisplay = true;
 
                 try {
-                    const displayId = value === 'windowed' ? null : parseInt(value);
+                    let displayId;
+                    if (value === 'windowed') {
+                        displayId = null;
+                    } else if (value === 'none') {
+                        displayId = 'none';
+                    } else {
+                        displayId = parseInt(value);
+                    }
+
                     console.log('[Control Page] Requesting display change to:', displayId);
 
                     const response = await fetch('/api/displays/set', {
@@ -2321,6 +2341,7 @@
                         // Update local state immediately
                         currentDisplayState.currentDisplayId = result.currentDisplayId;
                         currentDisplayState.isFullscreen = result.isFullscreen;
+                        currentDisplayState.noOutput = result.noOutput || false;
 
                         // Wait for fullscreen transition to complete before re-enabling polling
                         setTimeout(() => {
@@ -2343,7 +2364,7 @@
                 await loadDisplays();
             }
 
-            // Poll for display state changes (to sync with tray menu changes)
+            // Poll for display state changes (to sync with tray menu changes and window closing)
             // Uses lightweight endpoint that doesn't log or fetch full display list
             setInterval(async () => {
                 // Don't poll while we're actively changing displays
@@ -2354,15 +2375,17 @@
                     const data = await response.json();
 
                     if (data && currentDisplayState) {
-                        // Check if the active display changed (from tray menu, keyboard shortcuts, etc.)
+                        // Check if the active display changed (from tray menu, keyboard shortcuts, window closed, etc.)
                         const stateChanged =
                             currentDisplayState.isFullscreen !== data.isFullscreen ||
-                            currentDisplayState.currentDisplayId !== data.currentDisplayId;
+                            currentDisplayState.currentDisplayId !== data.currentDisplayId ||
+                            currentDisplayState.noOutput !== data.noOutput;
 
                         if (stateChanged) {
                             console.log('[Control Page] Display state changed externally, updating dropdown');
                             currentDisplayState.isFullscreen = data.isFullscreen;
                             currentDisplayState.currentDisplayId = data.currentDisplayId;
+                            currentDisplayState.noOutput = data.noOutput || false;
                             updateDisplaySelector();
                         }
                     }

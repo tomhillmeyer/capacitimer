@@ -166,6 +166,22 @@ function createLauncherWindow() {
 
   loadLauncher();
 
+  // Make launcher window draggable
+  launcherWindow.webContents.on('did-finish-load', () => {
+    launcherWindow.webContents.insertCSS(`
+      body {
+        -webkit-app-region: drag;
+      }
+      /* Make buttons and interactive elements clickable */
+      button,
+      input,
+      select,
+      a {
+        -webkit-app-region: no-drag;
+      }
+    `);
+  });
+
   launcherWindow.on('closed', () => {
     launcherWindow = null;
   });
@@ -227,6 +243,20 @@ function createDisplayWindow() {
 
   // Restore previous display settings after window is ready
   mainWindow.webContents.on('did-finish-load', () => {
+    // Make the display window draggable
+    mainWindow.webContents.insertCSS(`
+      body {
+        -webkit-app-region: drag;
+      }
+      /* Make buttons and interactive elements clickable */
+      button,
+      input,
+      select,
+      a {
+        -webkit-app-region: no-drag;
+      }
+    `);
+
     const prefs = loadDisplayPrefs();
     if (prefs && prefs.isFullscreen && prefs.displayId) {
       // Wait 500ms to ensure React app and WebSocket are initialized
@@ -288,9 +318,25 @@ function createControlWindow() {
 
   loadControl();
 
-  // Inject CSS padding at the top after the page loads
+  // Inject CSS padding at the top and make window draggable after the page loads
   controlWindow.webContents.on('did-finish-load', () => {
-    controlWindow.webContents.insertCSS('body { padding-top: 1rem !important; }');
+    controlWindow.webContents.insertCSS(`
+      body {
+        padding-top: 1rem !important;
+        -webkit-app-region: drag;
+      }
+      /* Make interactive elements clickable (not draggable) */
+      button,
+      input,
+      select,
+      a,
+      .header-info,
+      textarea,
+      .timer-display,
+      label {
+        -webkit-app-region: no-drag;
+      }
+    `);
   });
 
   controlWindow.on('closed', () => {
@@ -699,17 +745,8 @@ function startWebServer() {
       launcherWindow = null;
     }
 
-    // Create display window (minimized)
-    createDisplayWindow();
-
-    // Minimize the display window after a short delay to ensure it's loaded
-    setTimeout(() => {
-      if (mainWindow) {
-        mainWindow.minimize();
-      }
-    }, 1000);
-
     // Create control window (Electron window showing control page)
+    // Don't create display window - it will be created on-demand when user selects a display
     createControlWindow();
 
     res.json({ success: true });
@@ -732,7 +769,8 @@ function startWebServer() {
         size: d.size
       })),
       currentDisplayId: currentFullscreenDisplay,
-      isFullscreen: mainWindow ? mainWindow.isFullScreen() : false
+      isFullscreen: mainWindow ? mainWindow.isFullScreen() : false,
+      noOutput: !mainWindow
     });
   });
 
@@ -745,19 +783,37 @@ function startWebServer() {
 
     res.json({
       currentDisplayId: currentFullscreenDisplay,
-      isFullscreen: mainWindow ? mainWindow.isFullScreen() : false
+      isFullscreen: mainWindow ? mainWindow.isFullScreen() : false,
+      noOutput: !mainWindow
     });
   });
 
   expressApp.post('/api/displays/set', (req, res) => {
     const { displayId } = req.body;
 
+    // If mainWindow doesn't exist, create it first
     if (!mainWindow) {
-      return res.json({ success: false, error: 'No main window' });
+      console.log('[Display API] Main window does not exist, creating display window...');
+      createDisplayWindow();
+
+      // Wait for window to be created and ready
+      setTimeout(() => {
+        if (!mainWindow) {
+          return res.json({ success: false, error: 'Failed to create main window' });
+        }
+
+        // Now proceed with display switching
+        handleDisplaySwitch(displayId, res);
+      }, 500);
+      return;
     }
 
+    handleDisplaySwitch(displayId, res);
+  });
+
+  function handleDisplaySwitch(displayId, res) {
     const isWindows = process.platform === 'win32';
-    console.log(`[Display API] Request: displayId=${displayId}, currentFullscreen=${mainWindow.isFullScreen()}, currentDisplay=${currentFullscreenDisplay}, platform=${process.platform}`);
+    console.log(`[Display API] Request: displayId=${displayId}, currentFullscreen=${mainWindow ? mainWindow.isFullScreen() : false}, currentDisplay=${currentFullscreenDisplay}, platform=${process.platform}`);
 
     if (displayId === null) {
       // Exit fullscreen (windowed mode)
@@ -776,6 +832,25 @@ function startWebServer() {
         success: true,
         currentDisplayId: null,
         isFullscreen: false
+      });
+    } else if (displayId === 'none') {
+      // No output - destroy the display window
+      console.log('[Display API] No output requested, closing display window');
+      currentFullscreenDisplay = null;
+
+      if (mainWindow) {
+        mainWindow.close();
+        mainWindow = null;
+      }
+
+      saveDisplayPrefs();
+      updateTrayMenu();
+
+      return res.json({
+        success: true,
+        currentDisplayId: null,
+        isFullscreen: false,
+        noOutput: true
       });
     } else {
       // Enter fullscreen on selected display
@@ -943,7 +1018,7 @@ function startWebServer() {
         isFullscreen: true
       });
     }
-  });
+  }
 
   // Try to start server on port 80, incrementing if unavailable
   function tryListen(port) {
