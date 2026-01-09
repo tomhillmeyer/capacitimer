@@ -10,6 +10,7 @@ import fs from 'fs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let mainWindow = null;
+let launcherWindow = null;
 let webServer = null;
 let wss = null;
 let bonjourService = null;
@@ -137,7 +138,40 @@ function saveSettings(settings) {
   }
 }
 
-function createWindow() {
+function createLauncherWindow() {
+  launcherWindow = new BrowserWindow({
+    width: 600,
+    height: 500,
+    resizable: false,
+    autoHideMenuBar: true,
+    title: 'Capacitimer',
+    titleBarStyle: 'hidden',
+    ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
+    icon: path.join(__dirname, '../assets/capacitimer.png'),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  // Wait for web server to be ready before loading launcher
+  const loadLauncher = () => {
+    if (webServerPort) {
+      const portSuffix = webServerPort === 80 ? '' : `:${webServerPort}`;
+      launcherWindow.loadURL(`http://localhost${portSuffix}/launcher`);
+    } else {
+      setTimeout(loadLauncher, 100);
+    }
+  };
+
+  loadLauncher();
+
+  launcherWindow.on('closed', () => {
+    launcherWindow = null;
+  });
+}
+
+function createDisplayWindow() {
   // Check for --fullscreen flag in command line args
   const isFullscreen = process.argv.includes('--fullscreen');
 
@@ -145,6 +179,8 @@ function createWindow() {
     width: 1920,
     height: 1080,
     fullscreen: isFullscreen,
+    titleBarStyle: 'hidden',
+    ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
     autoHideMenuBar: true,
     fullscreenable: true,
     title: 'Capacitimer',
@@ -224,6 +260,47 @@ function createWindow() {
   });
 }
 
+function createControlWindow() {
+  const controlWindow = new BrowserWindow({
+    autoHideMenuBar: true,
+    titleBarStyle: 'hidden',
+    ...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
+    title: 'Capacitimer',
+    icon: path.join(__dirname, '../assets/capacitimer.png'),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  // Maximize the window to fill the screen (but not fullscreen)
+  controlWindow.maximize();
+
+  // Wait for web server to be ready before loading control page
+  const loadControl = () => {
+    if (webServerPort) {
+      const portSuffix = webServerPort === 80 ? '' : `:${webServerPort}`;
+      controlWindow.loadURL(`http://localhost${portSuffix}/control`);
+    } else {
+      setTimeout(loadControl, 100);
+    }
+  };
+
+  loadControl();
+
+  // Inject CSS padding at the top after the page loads
+  controlWindow.webContents.on('did-finish-load', () => {
+    controlWindow.webContents.insertCSS('body { padding-top: 1rem !important; }');
+  });
+
+  controlWindow.on('closed', () => {
+    // Control window closed, but don't set mainWindow to null
+    // since mainWindow is the display window
+  });
+
+  return controlWindow;
+}
+
 function createTray() {
   // Select icon based on platform
   let iconPath;
@@ -281,60 +358,77 @@ function updateTrayMenu() {
 
   const menuItems = [];
 
-  // Add "Windowed (Not Fullscreen)" option
-  menuItems.push({
-    label: 'Windowed (Not Fullscreen)',
-    type: 'checkbox',
-    checked: !currentFullscreenDisplay && !mainWindow.isFullScreen(),
-    click: () => {
-      mainWindow.setFullScreen(false);
-      currentFullscreenDisplay = null;
-      saveDisplayPrefs();
-      updateTrayMenu();
-    }
-  });
-
-  // Add separator
-  menuItems.push({ type: 'separator' });
-
-  // Add display items
-  displays.forEach((display, index) => {
-    const isCurrentDisplay = currentFullscreenDisplay === display.id;
+  // Add "Windowed (Not Fullscreen)" option (only if mainWindow exists)
+  if (mainWindow) {
     menuItems.push({
-      label: `Display ${index + 1}${display.label ? ` (${display.label})` : ''} - ${display.size.width}x${display.size.height}`,
+      label: 'Windowed (Not Fullscreen)',
       type: 'checkbox',
-      checked: isCurrentDisplay,
-      click: async () => {
-        if (isCurrentDisplay) {
-          // Exit fullscreen
-          mainWindow.setFullScreen(false);
-          currentFullscreenDisplay = null;
+      checked: !currentFullscreenDisplay && !mainWindow.isFullScreen(),
+      click: () => {
+        mainWindow.setFullScreen(false);
+        currentFullscreenDisplay = null;
+        saveDisplayPrefs();
+        updateTrayMenu();
+      }
+    });
 
-          const isWindows = process.platform === 'win32';
-          const delay = isWindows ? 500 : 0;
-          setTimeout(() => {
-            saveDisplayPrefs();
-            updateTrayMenu();
-          }, delay);
-        } else {
-          // Enter fullscreen on selected display
-          const bounds = display.bounds;
-          const targetDisplayId = display.id;
-          const isWindows = process.platform === 'win32';
+    // Add separator
+    menuItems.push({ type: 'separator' });
+  }
 
-          console.log(`[Tray Menu] Switching to display ${targetDisplayId}, platform=${process.platform}`);
+  // Add display items (only if mainWindow exists)
+  if (mainWindow) {
+    displays.forEach((display, index) => {
+      const isCurrentDisplay = currentFullscreenDisplay === display.id;
+      menuItems.push({
+        label: `Display ${index + 1}${display.label ? ` (${display.label})` : ''} - ${display.size.width}x${display.size.height}`,
+        type: 'checkbox',
+        checked: isCurrentDisplay,
+        click: async () => {
+          if (isCurrentDisplay) {
+            // Exit fullscreen
+            mainWindow.setFullScreen(false);
+            currentFullscreenDisplay = null;
 
-          // Set the display immediately (optimistically) to prevent race conditions
-          currentFullscreenDisplay = targetDisplayId;
+            const isWindows = process.platform === 'win32';
+            const delay = isWindows ? 500 : 0;
+            setTimeout(() => {
+              saveDisplayPrefs();
+              updateTrayMenu();
+            }, delay);
+          } else {
+            // Enter fullscreen on selected display
+            const bounds = display.bounds;
+            const targetDisplayId = display.id;
+            const isWindows = process.platform === 'win32';
 
-          if (isWindows) {
-            // Windows-specific handling
-            if (mainWindow.isFullScreen()) {
-              console.log('[Tray Menu] [Windows] Exiting current fullscreen first...');
-              mainWindow.setFullScreen(false);
+            console.log(`[Tray Menu] Switching to display ${targetDisplayId}, platform=${process.platform}`);
 
-              setTimeout(() => {
-                console.log('[Tray Menu] [Windows] Setting bounds to target display:', JSON.stringify(bounds));
+            // Set the display immediately (optimistically) to prevent race conditions
+            currentFullscreenDisplay = targetDisplayId;
+
+            if (isWindows) {
+              // Windows-specific handling
+              if (mainWindow.isFullScreen()) {
+                console.log('[Tray Menu] [Windows] Exiting current fullscreen first...');
+                mainWindow.setFullScreen(false);
+
+                setTimeout(() => {
+                  console.log('[Tray Menu] [Windows] Setting bounds to target display:', JSON.stringify(bounds));
+                  mainWindow.setBounds(bounds);
+
+                  setTimeout(() => {
+                    console.log('[Tray Menu] [Windows] Entering fullscreen');
+                    mainWindow.setFullScreen(true);
+
+                    setTimeout(() => {
+                      saveDisplayPrefs();
+                      updateTrayMenu();
+                    }, 300);
+                  }, 500);
+                }, 500);
+              } else {
+                console.log('[Tray Menu] [Windows] Not fullscreen, setting bounds and entering');
                 mainWindow.setBounds(bounds);
 
                 setTimeout(() => {
@@ -346,99 +440,86 @@ function updateTrayMenu() {
                     updateTrayMenu();
                   }, 300);
                 }, 500);
-              }, 500);
-            } else {
-              console.log('[Tray Menu] [Windows] Not fullscreen, setting bounds and entering');
-              mainWindow.setBounds(bounds);
-
-              setTimeout(() => {
-                console.log('[Tray Menu] [Windows] Entering fullscreen');
-                mainWindow.setFullScreen(true);
-
-                setTimeout(() => {
-                  saveDisplayPrefs();
-                  updateTrayMenu();
-                }, 300);
-              }, 500);
-            }
-          } else {
-            // macOS-specific handling: two-step positioning with event-driven callbacks
-            if (mainWindow.isFullScreen()) {
-              console.log('[Tray Menu] [macOS] Exiting current fullscreen first...');
-              mainWindow.setFullScreen(false);
-
-              mainWindow.once('leave-full-screen', () => {
-                console.log('[Tray Menu] [macOS] Left fullscreen, waiting before moving...');
-
-                // Wait a bit for macOS to fully process the fullscreen exit
-                setTimeout(() => {
-                  console.log('[Tray Menu] [macOS] Moving to new display bounds:', JSON.stringify(bounds));
-                  const currentBounds = mainWindow.getBounds();
-
-                  // Ensure window is shown and focused
-                  if (!mainWindow.isVisible()) {
-                    mainWindow.show();
-                  }
-
-                  // Calculate center position of target display to ensure we land on it
-                  const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
-                  const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
-
-                  console.log('[Tray Menu] [macOS] Moving window to center of target display:', centerX, centerY);
-
-                  // Move to center of target display first (no animation)
-                  mainWindow.setPosition(centerX, centerY, false);
-
-                  // Wait a moment for the position to update
-                  setTimeout(() => {
-                    // Now set to full bounds of display
-                    mainWindow.setBounds(bounds);
-
-                    // Longer delay to ensure window has moved to new display
-                    setTimeout(() => {
-                      console.log('[Tray Menu] [macOS] Entering fullscreen on new display');
-                      mainWindow.setFullScreen(true);
-                      saveDisplayPrefs();
-                      updateTrayMenu();
-                    }, 300);
-                  }, 100);
-                }, 200); // Wait 200ms after leaving fullscreen before moving
-              });
-            } else {
-              // Not fullscreen, just move and enter fullscreen
-              console.log('[Tray Menu] [macOS] Not fullscreen, moving and entering');
-              const currentBounds = mainWindow.getBounds();
-
-              // Ensure window is shown and focused
-              if (!mainWindow.isVisible()) {
-                mainWindow.show();
               }
+            } else {
+              // macOS-specific handling: two-step positioning with event-driven callbacks
+              if (mainWindow.isFullScreen()) {
+                console.log('[Tray Menu] [macOS] Exiting current fullscreen first...');
+                mainWindow.setFullScreen(false);
 
-              // Calculate center position of target display to ensure we land on it
-              const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
-              const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+                mainWindow.once('leave-full-screen', () => {
+                  console.log('[Tray Menu] [macOS] Left fullscreen, waiting before moving...');
 
-              console.log('[Tray Menu] [macOS] Moving window to center of target display:', centerX, centerY);
+                  // Wait a bit for macOS to fully process the fullscreen exit
+                  setTimeout(() => {
+                    console.log('[Tray Menu] [macOS] Moving to new display bounds:', JSON.stringify(bounds));
+                    const currentBounds = mainWindow.getBounds();
 
-              // Move to center of target display first (no animation)
-              mainWindow.setPosition(centerX, centerY, false);
+                    // Ensure window is shown and focused
+                    if (!mainWindow.isVisible()) {
+                      mainWindow.show();
+                    }
 
-              setTimeout(() => {
-                // Now set to full bounds of display
-                mainWindow.setBounds(bounds);
+                    // Calculate center position of target display to ensure we land on it
+                    const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
+                    const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+
+                    console.log('[Tray Menu] [macOS] Moving window to center of target display:', centerX, centerY);
+
+                    // Move to center of target display first (no animation)
+                    mainWindow.setPosition(centerX, centerY, false);
+
+                    // Wait a moment for the position to update
+                    setTimeout(() => {
+                      // Now set to full bounds of display
+                      mainWindow.setBounds(bounds);
+
+                      // Longer delay to ensure window has moved to new display
+                      setTimeout(() => {
+                        console.log('[Tray Menu] [macOS] Entering fullscreen on new display');
+                        mainWindow.setFullScreen(true);
+                        saveDisplayPrefs();
+                        updateTrayMenu();
+                      }, 300);
+                    }, 100);
+                  }, 200); // Wait 200ms after leaving fullscreen before moving
+                });
+              } else {
+                // Not fullscreen, just move and enter fullscreen
+                console.log('[Tray Menu] [macOS] Not fullscreen, moving and entering');
+                const currentBounds = mainWindow.getBounds();
+
+                // Ensure window is shown and focused
+                if (!mainWindow.isVisible()) {
+                  mainWindow.show();
+                }
+
+                // Calculate center position of target display to ensure we land on it
+                const centerX = bounds.x + Math.floor(bounds.width / 2) - Math.floor(currentBounds.width / 2);
+                const centerY = bounds.y + Math.floor(bounds.height / 2) - Math.floor(currentBounds.height / 2);
+
+                console.log('[Tray Menu] [macOS] Moving window to center of target display:', centerX, centerY);
+
+                // Move to center of target display first (no animation)
+                mainWindow.setPosition(centerX, centerY, false);
 
                 setTimeout(() => {
-                  mainWindow.setFullScreen(true);
-                  saveDisplayPrefs();
-                  updateTrayMenu();
-                }, 300);
-              }, 100);
+                  // Now set to full bounds of display
+                  mainWindow.setBounds(bounds);
+
+                  setTimeout(() => {
+                    mainWindow.setFullScreen(true);
+                    saveDisplayPrefs();
+                    updateTrayMenu();
+                  }, 300);
+                }, 100);
+              }
             }
           }
         }
-      }
+      });
     });
-  });
+  }
 
   // Add separator and refresh displays option
   menuItems.push({ type: 'separator' });
@@ -518,6 +599,10 @@ function startWebServer() {
     res.sendFile(path.join(__dirname, '../web-server/display.html'));
   });
 
+  expressApp.get('/launcher', (req, res) => {
+    res.sendFile(path.join(__dirname, '../web-server/launcher.html'));
+  });
+
   // API endpoints
   expressApp.get('/api/timer', (req, res) => {
     // Always recalculate time remaining for accurate sync
@@ -587,6 +672,47 @@ function startWebServer() {
     // Broadcast presets change to all WebSocket clients
     broadcastPresets(customPresets);
     res.json({ success: true, presets: customPresets });
+  });
+
+  // Launcher endpoints
+  expressApp.post('/api/launcher/display', (req, res) => {
+    console.log('[Launcher] Display mode selected');
+
+    // Close launcher window
+    if (launcherWindow) {
+      launcherWindow.close();
+      launcherWindow = null;
+    }
+
+    // Create display window
+    createDisplayWindow();
+
+    res.json({ success: true });
+  });
+
+  expressApp.post('/api/launcher/control', (req, res) => {
+    console.log('[Launcher] Control mode selected');
+
+    // Close launcher window
+    if (launcherWindow) {
+      launcherWindow.close();
+      launcherWindow = null;
+    }
+
+    // Create display window (minimized)
+    createDisplayWindow();
+
+    // Minimize the display window after a short delay to ensure it's loaded
+    setTimeout(() => {
+      if (mainWindow) {
+        mainWindow.minimize();
+      }
+    }, 1000);
+
+    // Create control window (Electron window showing control page)
+    createControlWindow();
+
+    res.json({ success: true });
   });
 
   // Display endpoints (for Electron app only, disabled on Linux)
@@ -846,12 +972,6 @@ function startWebServer() {
         if (tray) {
           updateTrayMenu();
         }
-
-        // Open control page in default browser
-        const portSuffix = port === 80 ? '' : `:${port}`;
-        const controlUrl = `http://localhost${portSuffix}/control`;
-        console.log(`Opening control page in browser: ${controlUrl}`);
-        shell.openExternal(controlUrl);
       })
       .on('error', (err) => {
         if (err.code === 'EACCES') {
@@ -1256,13 +1376,17 @@ app.whenReady().then(() => {
   }
 
   setupIpcHandlers();
-  createWindow();
   createTray();
   startWebServer();
 
+  // Create launcher window after a short delay to ensure web server is ready
+  setTimeout(() => {
+    createLauncherWindow();
+  }, 500);
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      createLauncherWindow();
     }
   });
 });
