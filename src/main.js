@@ -833,25 +833,6 @@ function startWebServer() {
         currentDisplayId: null,
         isFullscreen: false
       });
-    } else if (displayId === 'none') {
-      // No output - destroy the display window
-      console.log('[Display API] No output requested, closing display window');
-      currentFullscreenDisplay = null;
-
-      if (mainWindow) {
-        mainWindow.close();
-        mainWindow = null;
-      }
-
-      saveDisplayPrefs();
-      updateTrayMenu();
-
-      return res.json({
-        success: true,
-        currentDisplayId: null,
-        isFullscreen: false,
-        noOutput: true
-      });
     } else {
       // Enter fullscreen on selected display
       const displays = screen.getAllDisplays();
@@ -1454,14 +1435,26 @@ app.whenReady().then(() => {
   createTray();
   startWebServer();
 
-  // Create launcher window after a short delay to ensure web server is ready
-  setTimeout(() => {
-    createLauncherWindow();
-  }, 500);
+  // On Linux (kiosk mode), bypass launcher and go straight to fullscreen display
+  // On other platforms, show launcher window
+  if (process.platform === 'linux') {
+    console.log('[Linux] Kiosk mode - bypassing launcher, creating fullscreen display');
+    createDisplayWindow();
+  } else {
+    // Create launcher window after a short delay to ensure web server is ready
+    setTimeout(() => {
+      createLauncherWindow();
+    }, 500);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createLauncherWindow();
+      // On Linux, recreate display window; on other platforms, recreate launcher
+      if (process.platform === 'linux') {
+        createDisplayWindow();
+      } else {
+        createLauncherWindow();
+      }
     }
   });
 });

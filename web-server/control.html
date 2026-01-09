@@ -2258,10 +2258,11 @@
 
                     selector.innerHTML = '';
 
-                    // Add "No Output" option
+                    // Add "Select Output" option (disabled, only shows when no window exists)
                     const noOutputOption = document.createElement('option');
                     noOutputOption.value = 'none';
-                    noOutputOption.textContent = 'No Output';
+                    noOutputOption.textContent = 'Select Output';
+                    noOutputOption.disabled = true;
                     selector.appendChild(noOutputOption);
 
                     // Add "Windowed" option
@@ -2280,17 +2281,19 @@
                         selector.appendChild(option);
                     });
 
-                    // Set current value - check if noOutput flag is set
+                    // Set current value based on state
                     if (currentDisplayState.noOutput) {
+                        // No output window exists - show "Select Output"
                         selector.value = 'none';
-                    } else if (!currentDisplayState.isFullscreen && !currentDisplayState.currentDisplayId) {
-                        // Check if mainWindow exists by seeing if we have any display state
-                        // If we just loaded and there's no state, assume no output
-                        selector.value = 'none';
-                    } else if (!currentDisplayState.isFullscreen) {
-                        selector.value = 'windowed';
-                    } else if (currentDisplayState.currentDisplayId) {
+                    } else if (currentDisplayState.isFullscreen && currentDisplayState.currentDisplayId) {
+                        // Fullscreen on a specific display
                         selector.value = currentDisplayState.currentDisplayId;
+                    } else if (!currentDisplayState.isFullscreen) {
+                        // Window exists but not fullscreen (windowed mode)
+                        selector.value = 'windowed';
+                    } else {
+                        // Fallback to windowed
+                        selector.value = 'windowed';
                     }
                 });
             }
@@ -2320,8 +2323,6 @@
                     let displayId;
                     if (value === 'windowed') {
                         displayId = null;
-                    } else if (value === 'none') {
-                        displayId = 'none';
                     } else {
                         displayId = parseInt(value);
                     }
