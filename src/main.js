@@ -354,23 +354,24 @@ function createControlWindow() {
 
   loadControl();
 
-  // Inject CSS padding at the top and make window draggable after the page loads
+  // Inject CSS padding at the top and create draggable region after the page loads
   controlWindow.webContents.on('did-finish-load', () => {
+    // Create a draggable region at the very top
+    controlWindow.webContents.executeJavaScript(`
+      const dragRegion = document.createElement('div');
+      dragRegion.id = 'electron-drag-region';
+      dragRegion.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; height: 1rem; z-index: 9999; -webkit-app-region: drag;';
+      document.body.insertBefore(dragRegion, document.body.firstChild);
+    `);
+
     controlWindow.webContents.insertCSS(`
       body {
         padding-top: 1rem !important;
-        -webkit-app-region: drag;
       }
-      /* Make interactive elements clickable (not draggable) */
-      button,
-      input,
-      select,
-      a,
-      .header-info,
-      textarea,
-      .timer-display,
-      label {
-        -webkit-app-region: no-drag;
+      /* Drag region styling */
+      #electron-drag-region {
+        background: transparent;
+        pointer-events: auto;
       }
     `);
   });
